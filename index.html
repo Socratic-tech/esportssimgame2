@@ -1,0 +1,1418 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Esports Company Management Simulation v2.0</title>
+  <style>
+    :root{
+      --bg:#070b16;
+      --panel:#11172b;
+      --line:#1f2a52;
+      --text:#e8eeff;
+      --muted:#b9c8ff;
+      --accent:#6aa8ff;
+      --good:#10b981;
+      --bad:#ef4444;
+      --warn:#f59e0b;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:radial-gradient(circle at top,#192247 0,#070b16 55%);
+      color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      line-height:1.55;
+    }
+    header{
+      background:#050815d9;
+      border-bottom:1px solid var(--line);
+      backdrop-filter:blur(10px);
+      position:sticky;
+      top:0;
+      z-index:10;
+    }
+    header .wrap{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      padding:10px 16px;
+      max-width:1100px;
+      margin:0 auto;
+    }
+    h1{
+      font-size:20px;
+      color:var(--accent);
+      margin:0;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .wrap-main{
+      max-width:1100px;
+      margin:0 auto;
+      padding:16px;
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    input[type=text]{
+      background:#050816;
+      border:1px solid #2a3a6e;
+      color:var(--text);
+      border-radius:999px;
+      padding:8px 12px;
+      min-width:220px;
+      font-size:14px;
+    }
+    .btn{
+      background:#1a3d86;
+      border:1px solid #2453a5;
+      color:#fff;
+      padding:8px 14px;
+      border-radius:999px;
+      cursor:pointer;
+      font-size:14px;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .btn:hover{filter:brightness(1.07)}
+    .btn.good{background:#166534;border-color:#16a34a;}
+    .btn.bad{background:#7f1d1d;border-color:#b91c1c;}
+    .btn.ghost{background:transparent;border-color:var(--line);color:var(--muted);}
+    .btn.small{padding:6px 10px;font-size:12px;}
+    .grid{display:grid;gap:12px;}
+    .card{
+      background:rgba(9,13,32,0.92);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+      box-shadow:0 18px 45px rgba(0,0,0,0.5);
+    }
+    .status{
+      grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    }
+    .kpi h3{
+      margin:0 0 4px 0;
+      color:var(--muted);
+      font-size:11px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .kpi .v{
+      font-weight:700;
+      font-size:18px;
+    }
+    .kpi .sub{
+      font-size:11px;
+      color:#9ca6ff;
+    }
+    .event{
+      background:#05091b;
+      border-radius:12px;
+      padding:12px;
+      border:1px solid #232f61;
+      margin-top:8px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 9px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      font-size:12px;
+      background:#050816;
+      color:var(--muted);
+    }
+    .meter{
+      height:10px;
+      background:#050816;
+      border-radius:999px;
+      border:1px solid #202856;
+      overflow:hidden;
+    }
+    .meter > i{
+      display:block;
+      height:100%;
+      background:linear-gradient(90deg,#ef4444,#f59e0b,#10b981);
+      transition:width .25s ease-out;
+    }
+    .choices{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+      gap:12px;
+      margin-top:12px;
+    }
+    fieldset{
+      border:1px dashed var(--line);
+      border-radius:14px;
+      padding:10px 10px 6px;
+    }
+    legend{
+      padding:0 6px;
+      color:var(--muted);
+      font-size:12px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .option{
+      display:flex;
+      gap:8px;
+      align-items:flex-start;
+      padding:7px 6px;
+      border-radius:10px;
+      border:1px solid transparent;
+      cursor:pointer;
+      margin-bottom:2px;
+    }
+    .option:hover{border-color:#28408e;background:rgba(24,38,94,0.4);}
+    .option input{margin-top:3px;}
+    .opt-main{font-size:13px;font-weight:600;}
+    .helper{font-size:11px;color:#cbd5ff;}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;}
+    .log{
+      background:#050816;
+      border-radius:12px;
+      border:1px dashed var(--line);
+      padding:10px;
+      font-size:12px;
+      max-height:260px;
+      overflow:auto;
+      white-space:pre-wrap;
+    }
+    .muted{color:#cbd5ff;font-size:13px;}
+    .footerbar{
+      position:sticky;
+      bottom:0;
+      background:#050815f0;
+      border-top:1px solid var(--line);
+      backdrop-filter:blur(10px);
+      padding:8px 0;
+      margin-top:16px;
+    }
+    .footer-wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:0 16px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .badge-mode{
+      font-size:11px;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+    }
+    .badge-mode.standard{color:var(--warn);}
+    .badge-mode.extended{color:var(--good);}
+    #finalScreen{margin-top:16px;}
+    #standardPrompt{
+      display:none;
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.65);
+      backdrop-filter:blur(4px);
+      align-items:center;
+      justify-content:center;
+      z-index:50;
+    }
+    #standardPrompt .modal{
+      background:#050816;
+      border-radius:16px;
+      border:1px solid var(--line);
+      padding:18px;
+      max-width:420px;
+      width:90%;
+    }
+    @keyframes fall{to{transform:translateY(100vh) rotate(720deg);opacity:.1}}
+    @media (max-width:640px){.choices{grid-template-columns:1fr}}
+    @media print{
+      header,.footerbar,#intro .actions,#game .actions,#standardPrompt{display:none !important}
+      body{background:#fff;color:#000;}
+      .card,.log{background:#fff;border-color:#000;box-shadow:none;}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>🎮 Esports Org Manager <span style="font-size:11px;font-weight:400;color:#9ca6ff;">Esports 100 • Lake Michigan College</span></h1>
+      <div class="row">
+        <label class="muted" for="studentName" style="font-size:12px;">Student Name</label>
+        <input id="studentName" type="text" placeholder="Enter your name" />
+        <button class="btn ghost small" id="btnReset">Reset</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap-main">
+    <!-- Intro / Instructions -->
+    <section id="intro" class="card">
+      <h2 style="margin-top:0;">Welcome, Manager X</h2>
+      <p class="muted">
+        You are the founder of a brand-new esports organization. You’ve just qualified into <b>Tier 3 (Rookie)</b>
+        and secured <b>$250,000</b> to launch your team. Your job is to make strategic choices about
+        <b>space</b>, <b>equipment</b>, <b>players</b>, and ongoing <b>operations</b>.
+      </p>
+      <p class="muted">
+        The simulation runs in turns and is designed for about <b>30 minutes</b> of Standard Play.
+        At that point you can end and score, or continue in <b>Extended Mode</b> until you either
+        <b>retire</b> or achieve <b>Mastery</b>.
+      </p>
+      <details class="card" style="margin-top:8px;background:#050816;">
+        <summary><b>What is TSR (Team Skill Rating)?</b></summary>
+        <p class="muted" style="margin-top:6px;">
+          <b>Team Skill Rating (TSR)</b> is a 0–100 estimate of your competitive strength.
+          Higher TSR plus healthy morale increases your <b>win probability</b>, which drives prize money,
+          fan growth, and sponsor interest.
+        </p>
+      </details>
+      <ul class="muted" style="font-size:12px;margin-top:10px;">
+        <li><b>Startup Phase (2 turns):</b> choose your facility, equipment, and players.</li>
+        <li><b>Season Phase:</b> each turn, pick one decision in each of three categories.</li>
+        <li><b>Win/Loss Logic:</b> wins bring prize money and fans; losses hurt sponsors and fans.</li>
+        <li><b>Game Over:</b> two turns in a row with negative cash (Financial Ruin) or morale hitting zero (Mutiny).</li>
+      </ul>
+      <div class="actions" style="margin-top:10px;">
+        <button class="btn" id="btnStart">Start Simulation</button>
+      </div>
+    </section>
+
+    <!-- Main Game -->
+    <section id="game" style="display:none;">
+      <div class="grid status">
+        <div class="card kpi">
+          <h3>Turn</h3>
+          <div class="v" id="kTurn"></div>
+          <div class="sub" id="kPhase"></div>
+        </div>
+        <div class="card kpi">
+          <h3>Season</h3>
+          <div class="v" id="kSeason"></div>
+          <div class="sub" id="kMode"></div>
+        </div>
+        <div class="card kpi">
+          <h3>Cash Reserves</h3>
+          <div class="v" id="kCash"></div>
+          <div class="sub">Goal: stay ≥ 0</div>
+        </div>
+        <div class="card kpi">
+          <h3>Fixed Expenses</h3>
+          <div class="v" id="kFixed"></div>
+          <div class="sub">per turn</div>
+        </div>
+        <div class="card kpi">
+          <h3>Fan Base</h3>
+          <div class="v" id="kFans"></div>
+        </div>
+        <div class="card kpi">
+          <h3>TSR</h3>
+          <div class="v" id="kTSR"></div>
+        </div>
+        <div class="card kpi">
+          <h3>Morale</h3>
+          <div class="v" id="kMorale"></div>
+        </div>
+        <div class="card kpi">
+          <h3>Rank</h3>
+          <div class="v" id="kRank"></div>
+        </div>
+        <div class="card kpi">
+          <h3>Debt</h3>
+          <div class="v" id="kDebt"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:10px;">
+        <div class="row" style="align-items:center;">
+          <span class="pill">Win Probability</span>
+          <div class="meter" style="flex:1;min-width:180px;margin:0 6px;">
+            <i id="winBar" style="width:40%;"></i>
+          </div>
+          <span class="muted" id="winPct">40%</span>
+          <span class="pill" style="margin-left:auto;">Session Progress
+            <span id="turnProgressPct" style="margin-left:6px;">0%</span>
+          </span>
+        </div>
+      </div>
+
+      <div id="scenarioBox" class="event"></div>
+
+      <!-- Dynamic decisions -->
+      <div class="choices">
+        <fieldset id="col1"></fieldset>
+        <fieldset id="col2"></fieldset>
+        <fieldset id="col3"></fieldset>
+      </div>
+
+      <div class="actions" style="margin-top:12px;">
+        <button class="btn" id="btnRun" disabled>Confirm Decisions & Run Turn</button>
+        <button class="btn ghost" id="btnRandom" title="Quick pick one option per column">Quick Pick</button>
+        <button class="btn ghost" id="btnUndo" disabled>Undo Last Turn</button>
+        <button class="btn ghost" id="btnEndEarly">End & Score Now</button>
+      </div>
+
+      <div class="grid" style="grid-template-columns:1.1fr .9fr;gap:12px;margin-top:12px;">
+        <div class="card">
+          <h3 style="margin-top:0;font-size:14px;">Finance Summary (this turn)</h3>
+          <div id="finance" class="muted"></div>
+          <p class="muted" id="feedback" style="margin-top:8px;font-style:italic;"></p>
+        </div>
+        <div class="log" id="log"></div>
+      </div>
+    </section>
+
+    <!-- Final Scoring -->
+    <section id="finalScreen" class="card" style="display:none;">
+      <h2 style="margin-top:0;">Final Scoring Screen</h2>
+      <pre id="finalText" class="muted" style="white-space:pre-wrap;"></pre>
+      <div class="actions" style="margin-top:10px;">
+        <button class="btn good" id="btnPDF">Save Final Report (PDF)</button>
+        <button class="btn" id="btnContinueExtended">Continue in Extended Mode</button>
+      </div>
+    </section>
+
+    <!-- Standard Session Prompt -->
+    <div id="standardPrompt">
+      <div class="modal">
+        <h3 style="margin-top:0;">Standard Session Complete</h3>
+        <p class="muted">
+          You’ve reached the end of the <b>Standard Play</b> window (designed for ~30 minutes).
+          You can end now and receive your Final Score, or switch into <b>Extended Mode</b> and keep managing your org.
+        </p>
+        <div class="actions" style="margin-top:10px;">
+          <button class="btn good" id="btnEndStandard">End Now & Score</button>
+          <button class="btn" id="btnGoExtended">Continue in Extended Mode</button>
+          <button class="btn ghost" id="btnCancelPrompt">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <div class="footerbar">
+    <div class="footer-wrap">
+      <span class="muted">
+        Make one choice per column each turn. Wins earn prize money & fans; losses apply a sponsor penalty and fan drop.
+      </span>
+      <div class="row">
+        <span id="modeBadge" class="badge-mode standard">Standard Mode</span>
+        <button class="btn ghost small" id="btnPrint">Print Page</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+
+    // DOM refs
+    const elIntro = $('#intro');
+    const elGame = $('#game');
+    const elFinal = $('#finalScreen');
+    const elName = $('#studentName');
+    const elReset = $('#btnReset');
+    const elStart = $('#btnStart');
+    const elRun = $('#btnRun');
+    const elRandom = $('#btnRandom');
+    const elUndo = $('#btnUndo');
+    const elEndEarly = $('#btnEndEarly');
+    const elPrint = $('#btnPrint');
+    const elFinance = $('#finance');
+    const elFeedback = $('#feedback');
+    const elScenario = $('#scenarioBox');
+    const elLog = $('#log');
+    const elFinalText = $('#finalText');
+    const elPDF = $('#btnPDF');
+    const elContinueExtended = $('#btnContinueExtended');
+    const winBar = $('#winBar');
+    const winPct = $('#winPct');
+    const turnProgressPct = $('#turnProgressPct');
+    const modeBadge = $('#modeBadge');
+    const promptWrap = $('#standardPrompt');
+    const btnEndStandard = $('#btnEndStandard');
+    const btnGoExtended = $('#btnGoExtended');
+    const btnCancelPrompt = $('#btnCancelPrompt');
+
+    const kTurn = $('#kTurn');
+    const kPhase = $('#kPhase');
+    const kSeason = $('#kSeason');
+    const kMode = $('#kMode');
+    const kCash = $('#kCash');
+    const kFixed = $('#kFixed');
+    const kFans = $('#kFans');
+    const kTSR = $('#kTSR');
+    const kMorale = $('#kMorale');
+    const kRank = $('#kRank');
+    const kDebt = $('#kDebt');
+
+    const col1 = $('#col1');
+    const col2 = $('#col2');
+    const col3 = $('#col3');
+
+    const fmtMoney = n => '$' + Number(n || 0).toLocaleString();
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    const rankName = r => r === 1 ? 'Tier 1 (Elite)' : r === 2 ? 'Tier 2 (Challenger)' : 'Tier 3 (Rookie)';
+
+    const save = () => {
+      try { localStorage.setItem('mgrx_v2_autosave', JSON.stringify(S)); } catch {}
+    };
+    const load = () => {
+      try { return JSON.parse(localStorage.getItem('mgrx_v2_autosave') || 'null'); } catch { return null; }
+    };
+
+    const START = {
+      turn: 1,
+      season: 1,
+      phase: 'startup',     // 'startup' | 'season' | 'ended'
+      mode: 'standard',     // 'standard' | 'extended'
+      maxStandardTurns: 10, // includes startup turns
+      turnsTotal: 9999,     // not used as a hard cap anymore
+      cash: 250000,
+      salaries: 30000,
+      fans: 5000,
+      tsr: 60,
+      morale: 70,
+      rank: 3,
+      debt: 0,
+      facilityLevel: 0,
+      facilityCondition: 100,
+      equipmentLevel: 0,
+      brandReputation: 1.0,
+      sponsorshipTier: 1,
+      merchNext: 0,
+      streak: 0,
+      negCashStreak: 0,
+      startupStep: 1,
+      problemCooldown: 0,
+      name: '',
+      history: [],
+      undoStack: [],
+      mastered: false,
+      endedReason: null
+    };
+
+    let S = load() || { ...START };
+
+    // ---- Decision Configs ----
+    const PHASE_CONFIG = {
+      startup: {
+        label: 'Startup',
+        columns: [
+          {
+            legend: '1) Facilities',
+            group: 'g1',
+            options: [
+              {
+                id: 'fac_shared',
+                title: 'Shared Office Space',
+                desc: 'Low rent, modest setup. Fixed costs +$5K/turn, small morale boost.'
+              },
+              {
+                id: 'fac_leased',
+                title: 'Leased Esports Facility',
+                desc: 'Higher rent but better practice environment. Fixed +$10K/turn, TSR & morale up.'
+              },
+              {
+                id: 'fac_house',
+                title: 'Custom Gaming House',
+                desc: 'Expensive but premium. Fixed +$18K/turn, big morale cap & TSR potential.'
+              }
+            ]
+          },
+          {
+            legend: '2) Equipment Setup',
+            group: 'g2',
+            options: [
+              {
+                id: 'eq_basic',
+                title: 'Basic Gaming PCs',
+                desc: 'Budget rigs. TSR cap modest, low upfront impact on cash.'
+              },
+              {
+                id: 'eq_pro',
+                title: 'Pro-Level Setup',
+                desc: 'Stronger performance. TSR +5, brand reputation up slightly.'
+              },
+              {
+                id: 'eq_premium',
+                title: 'Premium Streaming Rig',
+                desc: 'Top gear & content ready. Higher TSR ceiling & fans from streaming.'
+              }
+            ]
+          },
+          {
+            legend: '3) Player Recruitment',
+            group: 'g3',
+            options: [
+              {
+                id: 'ros_local',
+                title: 'Local Rookies',
+                desc: 'Cheap contracts, low starting TSR, high morale potential.'
+              },
+              {
+                id: 'ros_mix',
+                title: 'Semi-Pro Mix',
+                desc: 'Balanced costs. TSR +5, morale moderate, fans modest.'
+              },
+              {
+                id: 'ros_stars',
+                title: 'Star Free Agents',
+                desc: 'High salaries. TSR +10, starting fans +2,000, morale demanding.'
+              }
+            ]
+          }
+        ]
+      },
+      season: {
+        label: 'Season Play',
+        columns: [
+          {
+            legend: '1) Operations',
+            group: 'g1',
+            options: [
+              {
+                id: 'ops_analyst',
+                title: 'Hire Analyst ($20K)',
+                desc: 'TSR +5; adds +$5K to fixed costs each turn.'
+              },
+              {
+                id: 'ops_house',
+                title: 'Upgrade Team House ($40K)',
+                desc: 'Morale +10; Fans +500.'
+              },
+              {
+                id: 'ops_lean',
+                title: 'Stay Lean ($0)',
+                desc: 'No spend, but TSR −2.'
+              }
+            ]
+          },
+          {
+            legend: '2) Marketing',
+            group: 'g2',
+            options: [
+              {
+                id: 'mkt_merch',
+                title: 'Launch Merch ($25K)',
+                desc: 'Fans +1,000; queues +$10K merch revenue for next turn.'
+              },
+              {
+                id: 'mkt_local',
+                title: 'Host Local Event ($30K)',
+                desc: 'Fans +2,000; Morale +5.'
+              },
+              {
+                id: 'mkt_minimal',
+                title: 'Minimal Social ($0)',
+                desc: 'No spend, slow organic growth only.'
+              }
+            ]
+          },
+          {
+            legend: '3) Player Focus',
+            group: 'g3',
+            options: [
+              {
+                id: 'ply_bootcamp',
+                title: 'Intense Bootcamp ($0)',
+                desc: 'TSR +8; Morale −10 (burnout risk).'
+              },
+              {
+                id: 'ply_retreat',
+                title: 'Team Retreat ($10K)',
+                desc: 'Morale +10; TSR −3.'
+              },
+              {
+                id: 'ply_balanced',
+                title: 'Balanced Schedule ($0)',
+                desc: 'TSR +2; Morale +2.'
+              }
+            ]
+          }
+        ]
+      }
+      // NOTE: Offseason could be added later by extending PHASE_CONFIG.offseason
+    };
+
+    // ---- Rendering helpers ----
+    function renderDecisionsForPhase() {
+      const cfg = PHASE_CONFIG[S.phase] || PHASE_CONFIG.season;
+      const cols = [col1, col2, col3];
+
+      cfg.columns.forEach((colCfg, idx) => {
+        const fs = cols[idx];
+        if (!fs) return;
+        fs.innerHTML = '';
+        const legend = document.createElement('legend');
+        legend.textContent = colCfg.legend;
+        fs.appendChild(legend);
+
+        colCfg.options.forEach(opt => {
+          const label = document.createElement('label');
+          label.className = 'option';
+          const input = document.createElement('input');
+          input.type = 'radio';
+          input.name = colCfg.group;
+          input.value = opt.id;
+
+          const body = document.createElement('div');
+          const title = document.createElement('div');
+          title.className = 'opt-main';
+          title.textContent = opt.title;
+          const helper = document.createElement('div');
+          helper.className = 'helper';
+          helper.textContent = opt.desc;
+
+          body.appendChild(title);
+          body.appendChild(helper);
+          label.appendChild(input);
+          label.appendChild(body);
+          fs.appendChild(label);
+        });
+      });
+
+      // Re-attach preview handler
+      $$('input[name=g1], input[name=g2], input[name=g3]').forEach(inp => {
+        inp.addEventListener('change', previewEffects);
+      });
+
+      previewEffects();
+    }
+
+    function scenarioText() {
+      if (S.phase === 'startup') {
+        return S.startupStep === 1
+          ? 'Startup — Step 1: Choose your facility and initial setup to anchor your organization.'
+          : 'Startup — Step 2: Lock in equipment and your first roster of players.';
+      }
+      const flavors = [
+        'Scrim results leak and social media expects big results.',
+        'A rival org signs a star player and everyone is watching your response.',
+        'A major game patch reshapes the meta overnight.',
+        'Travel delays and PC issues test your logistics.',
+        'A clutch play from your team goes viral on TikTok.',
+        'Analysts highlight your org as a dark-horse contender.'
+      ];
+      const i = (S.turn + S.fans + S.tsr) % flavors.length;
+      return `Season ${S.season} • Turn ${S.turn} — ${flavors[i]}`;
+    }
+
+    function winProbability() {
+      // For startup, just use baseline probability to show concept
+      const moraleMult = clamp(S.morale / 100, 0.3, 1.2);
+      const equipMult = 1 + (S.equipmentLevel * 0.05);
+      const baseOpp = S.rank === 3 ? 65 : S.rank === 2 ? 75 : 85;
+      const jitter = 0; // no jitter in calculation for display
+      const opp = Math.max(40, baseOpp + jitter);
+      const raw = (S.tsr * moraleMult * equipMult) / opp;
+      return clamp(raw, 0.05, 0.95);
+    }
+
+    function academicFeedback(pl, ctx) {
+      const { revenue, expenses, fixed, variable } = ctx;
+      if (pl < 0 && revenue < fixed) {
+        return 'Your revenue did not reach the break-even point; fixed costs were not covered by your contribution margin.';
+      }
+      if (pl < 0 && variable > fixed) {
+        return 'High variable costs eroded your margin this turn; consider tightening discretionary spending like events and travel.';
+      }
+      if (pl >= 0 && revenue > expenses) {
+        return 'Positive contribution margin covered fixed costs and produced profit—reflect on which decisions drove revenue.';
+      }
+      if (pl < 0) {
+        return 'A net loss increased financial pressure; explore boosting revenue-generating assets or reducing liabilities.';
+      }
+      return 'You maintained stable finances this turn; continue balancing assets that drive recurring revenue with cost control.';
+    }
+
+    function updateStatus() {
+      kTurn.textContent = S.turn;
+      kPhase.textContent = S.phase === 'startup'
+        ? `Startup (Step ${S.startupStep}/2)`
+        : 'Season Play';
+
+      kSeason.textContent = S.season;
+      kMode.textContent = S.mode === 'standard' ? 'Standard' : 'Extended';
+      kCash.textContent = fmtMoney(S.cash);
+      kFixed.textContent = fmtMoney(S.salaries);
+      kFans.textContent = S.fans.toLocaleString();
+      kTSR.textContent = `${S.tsr} / 100`;
+      kMorale.textContent = `${S.morale} / 100`;
+      kRank.textContent = rankName(S.rank);
+      kDebt.textContent = fmtMoney(S.debt);
+
+      const wp = winProbability();
+      winBar.style.width = `${(wp * 100).toFixed(0)}%`;
+      winPct.textContent = `${(wp * 100).toFixed(0)}%`;
+
+      const pct = clamp(S.turn / S.maxStandardTurns, 0, 1);
+      turnProgressPct.textContent = `${(pct * 100).toFixed(0)}%`;
+
+      modeBadge.textContent = S.mode === 'standard' ? 'Standard Mode' : 'Extended Mode';
+      modeBadge.className = `badge-mode ${S.mode}`;
+      elScenario.textContent = scenarioText();
+    }
+
+    function appendLog(lines) {
+      const t = Array.isArray(lines) ? lines.join('\n') : String(lines);
+      elLog.textContent = (t + '\n' + elLog.textContent).trim();
+    }
+
+    function confetti(n = 18) {
+      const c = document.createElement('div');
+      c.style.position = 'fixed';
+      c.style.left = '0';
+      c.style.top = '0';
+      c.style.width = '100vw';
+      c.style.height = '0';
+      c.style.pointerEvents = 'none';
+      document.body.appendChild(c);
+      const glyphs = ['🎉','✨','💥','🌟'];
+      for (let i = 0; i < n; i++) {
+        const s = document.createElement('div');
+        s.textContent = glyphs[i % glyphs.length];
+        s.style.position = 'absolute';
+        s.style.left = (Math.random() * 100) + 'vw';
+        s.style.top = '-10px';
+        s.style.fontSize = (12 + Math.random() * 18) + 'px';
+        s.style.animation = `fall ${2 + Math.random()*2}s linear forwards`;
+        c.appendChild(s);
+        setTimeout(() => s.remove(), 4000);
+      }
+      setTimeout(() => c.remove(), 4200);
+    }
+
+    function setNameFromInput() {
+      S.name = (elName?.value || '').trim();
+      save();
+    }
+
+    // ---- Decision selection and preview ----
+    function getSelections() {
+      const d1 = document.querySelector('input[name=g1]:checked')?.value || null;
+      const d2 = document.querySelector('input[name=g2]:checked')?.value || null;
+      const d3 = document.querySelector('input[name=g3]:checked')?.value || null;
+      return { d1, d2, d3 };
+    }
+
+    function previewEffects() {
+      const { d1, d2, d3 } = getSelections();
+      const hasAll = !!(d1 && d2 && d3);
+      elRun.disabled = !hasAll;
+    }
+
+    // ---- Turn application logic ----
+    function applyStartupTurn(sel) {
+      const log = [];
+      let upfrontCost = 0;
+
+      // Facilities
+      if (sel.d1 === 'fac_shared') {
+        S.facilityLevel = 1;
+        S.salaries += 5000;
+        S.morale += 3;
+        upfrontCost += 30000;
+        log.push('🏢 You picked a Shared Office: fixed +$5K/turn, morale +3, modest setup cost.');
+      } else if (sel.d1 === 'fac_leased') {
+        S.facilityLevel = 2;
+        S.salaries += 10000;
+        S.morale += 5;
+        S.tsr += 3;
+        upfrontCost += 60000;
+        log.push('🏢 You leased a dedicated Facility: fixed +$10K/turn, morale & TSR up, higher startup cost.');
+      } else if (sel.d1 === 'fac_house') {
+        S.facilityLevel = 3;
+        S.salaries += 18000;
+        S.morale += 8;
+        S.tsr += 5;
+        upfrontCost += 100000;
+        log.push('🏠 You built a Gaming House: big fixed +$18K/turn, morale & TSR potential greatly increased.');
+      }
+
+      // Equipment
+      if (sel.d2 === 'eq_basic') {
+        S.equipmentLevel = 1;
+        upfrontCost += 20000;
+        log.push('🖥️ Basic PCs installed: low cost, limited performance.');
+      } else if (sel.d2 === 'eq_pro') {
+        S.equipmentLevel = 2;
+        S.tsr += 5;
+        S.brandReputation += 0.05;
+        upfrontCost += 50000;
+        log.push('🖥️ Pro-level setup: TSR +5, brand reputation slightly up.');
+      } else if (sel.d2 === 'eq_premium') {
+        S.equipmentLevel = 3;
+        S.tsr += 5;
+        S.brandReputation += 0.1;
+        S.fans += 500;
+        upfrontCost += 80000;
+        log.push('🎬 Premium streaming rig: TSR +5, brand +0.1, starting fans +500 from content hype.');
+      }
+
+      // Roster
+      if (sel.d3 === 'ros_local') {
+        S.salaries += 5000;
+        S.tsr += 0;
+        S.morale += 5;
+        upfrontCost += 10000;
+        log.push('🎮 Local rookies signed: low salaries, high morale potential.');
+      } else if (sel.d3 === 'ros_mix') {
+        S.salaries += 12000;
+        S.tsr += 5;
+        S.morale += 2;
+        S.fans += 500;
+        upfrontCost += 20000;
+        log.push('🎮 Semi-pro mix roster: balanced salaries, TSR +5, moderate fan interest.');
+      } else if (sel.d3 === 'ros_stars') {
+        S.salaries += 25000;
+        S.tsr += 10;
+        S.morale -= 2;
+        S.fans += 2000;
+        upfrontCost += 40000;
+        log.push('🌟 Star free agents: high salaries, TSR +10, +2,000 fans—but demanding egos.');
+      }
+
+      S.cash -= upfrontCost;
+      S.tsr = clamp(Math.round(S.tsr), 0, 100);
+      S.morale = clamp(Math.round(S.morale), 0, 100);
+      if (S.brandReputation < 0.7) S.brandReputation = 0.7;
+      if (S.brandReputation > 1.2) S.brandReputation = 1.2;
+
+      appendLog([
+        `Startup Step ${S.startupStep} summary:`,
+        ...log,
+        `Upfront investment this step: ${fmtMoney(upfrontCost)}`,
+        '─'.repeat(40)
+      ]);
+
+      S.startupStep += 1;
+      if (S.startupStep > 2) {
+        S.phase = 'season';
+        S.turn = 1;
+      } else {
+        S.turn += 1;
+      }
+    }
+
+    function maybeTriggerProblemEvent(log) {
+      if (S.problemCooldown > 0) {
+        S.problemCooldown -= 1;
+        return;
+      }
+      const roll = Math.random();
+      if (roll >= 0.2) return;
+
+      const type = Math.floor(Math.random() * 4);
+      if (type === 0) {
+        S.tsr -= 4;
+        S.morale -= 3;
+        log.push('🚑 Problem Event: Scrim injury slows practice. TSR −4, Morale −3.');
+      } else if (type === 1) {
+        const before = S.fans;
+        S.fans = Math.max(0, Math.round(S.fans * 0.97));
+        log.push(`📡 Problem Event: Streaming outage hurts exposure. Fans ${before.toLocaleString()} → ${S.fans.toLocaleString()} (−3%).`);
+      } else if (type === 2) {
+        S.brandReputation -= 0.05;
+        log.push('💼 Problem Event: Sponsor questions your results. Brand reputation slightly down.');
+      } else if (type === 3) {
+        S.facilityCondition -= 8;
+        log.push('🏚 Problem Event: Facility issues (internet/power). Condition −8.');
+      }
+      S.facilityCondition = clamp(S.facilityCondition, 0, 100);
+      S.problemCooldown = 2;
+    }
+
+    function applySeasonTurn(sel) {
+      const log = [];
+
+      // Save undo snapshot
+      S.undoStack.push(JSON.stringify(S));
+      if (S.undoStack.length > 10) S.undoStack.shift();
+      elUndo.disabled = S.undoStack.length === 0;
+
+      // Small flavor event
+      const minis = [
+        () => '🎉 Birthday stream boosts vibes slightly.',
+        () => '📹 Behind-the-scenes vlog builds fan connection.',
+        () => '🛠 Patch tweak nudges the meta; your comp needs adjustment.',
+        () => '📰 Local article puts your rookie story in the spotlight.'
+      ];
+      log.push(minis[Math.floor(Math.random() * minis.length)]());
+
+      let variable = 0;
+
+      // Operations (g1)
+      if (sel.d1 === 'ops_analyst') {
+        variable += 20000;
+        S.tsr += 5;
+        S.salaries += 5000;
+        log.push('⚙️ Operations: Analyst hired (Var −$20K; Fixed +$5K/turn; TSR +5).');
+      } else if (sel.d1 === 'ops_house') {
+        variable += 40000;
+        S.morale += 10;
+        S.fans += 500;
+        log.push('🏠 Operations: Team house upgrades (Var −$40K; Morale +10; Fans +500).');
+      } else if (sel.d1 === 'ops_lean') {
+        S.tsr -= 2;
+        log.push('🧮 Operations: Stayed lean (no spend; TSR −2 over time).');
+      }
+
+      // Marketing (g2)
+      let newlyQueuedMerch = 0;
+      if (sel.d2 === 'mkt_merch') {
+        variable += 25000;
+        S.fans += 1000;
+        newlyQueuedMerch += 10000;
+        log.push('🛍️ Marketing: Merch drop (Var −$25K; +1K fans; +$10K merch queued for next turn).');
+      } else if (sel.d2 === 'mkt_local') {
+        variable += 30000;
+        S.fans += 2000;
+        S.morale += 5;
+        log.push('🎪 Marketing: Local event (Var −$30K; +2K fans; Morale +5).');
+      } else if (sel.d2 === 'mkt_minimal') {
+        log.push('📣 Marketing: Minimal social presence (no spend; slow organic growth).');
+      }
+
+      // Player Focus (g3)
+      if (sel.d3 === 'ply_bootcamp') {
+        S.tsr += 8;
+        S.morale -= 10;
+        log.push('💪 Focus: Bootcamp (TSR +8; Morale −10).');
+      } else if (sel.d3 === 'ply_retreat') {
+        variable += 10000;
+        S.morale += 10;
+        S.tsr -= 3;
+        log.push('🌲 Focus: Retreat (Var −$10K; Morale +10; TSR −3).');
+      } else if (sel.d3 === 'ply_balanced') {
+        S.tsr += 2;
+        S.morale += 2;
+        log.push('⚖️ Focus: Balanced schedule (TSR +2; Morale +2).');
+      }
+
+      S.tsr = clamp(Math.round(S.tsr), 0, 100);
+      S.morale = clamp(Math.round(S.morale), 0, 100);
+
+      // Problem event (crisis)
+      maybeTriggerProblemEvent(log);
+
+      // Competitive result
+      const moraleMult = clamp(S.morale / 100, 0.3, 1.2);
+      const equipMult = 1 + (S.equipmentLevel * 0.05);
+      const baseOpp = S.rank === 3 ? 65 : S.rank === 2 ? 75 : 85;
+      const jitter = (Math.random() * 10) - 5;
+      const oppDiff = Math.max(40, baseOpp + jitter);
+      const pWin = clamp((S.tsr * moraleMult * equipMult) / oppDiff, 0.05, 0.95);
+      const isWin = Math.random() < pWin;
+
+      const prizeTable = { 1: 60000, 2: 35000, 3: 20000 };
+      let prizeMoney = isWin ? prizeTable[S.rank] : 0;
+
+      if (isWin) {
+        S.streak = (S.streak || 0) + 1;
+        S.fans += 1500;
+        confetti(20);
+        log.push(`🏆 MATCH RESULT: WIN (p=${(pWin*100).toFixed(1)}%). Prize ${fmtMoney(prizeMoney)}, Fans +1,500.`);
+      } else {
+        S.streak = 0;
+        variable += 10000; // sponsor penalty
+        const before = S.fans;
+        S.fans = Math.max(0, Math.round(S.fans * 0.95));
+        log.push(`💔 MATCH RESULT: LOSS (p=${(pWin*100).toFixed(1)}%). Sponsor penalty −$10,000; Fans ${before.toLocaleString()} → ${S.fans.toLocaleString()} (−5%).`);
+      }
+
+      // Finance
+      const prevQueuedMerch = S.merchNext || 0;
+      const baseSponsor = S.rank === 1 ? 30000 : S.rank === 2 ? 18000 : 9000;
+      const tierBonus = S.sponsorshipTier * 5000;
+      const brandMult = clamp(S.brandReputation, 0.7, 1.2);
+      const sponsorships = Math.round((baseSponsor + tierBonus + Math.max(0, S.tsr - 50) * 120) * brandMult);
+      const merchRevenue = prevQueuedMerch;
+      const facilityCost = S.facilityLevel * 5000;
+      const eqMaintenance = S.equipmentLevel * 2000;
+      const fixed = S.salaries + facilityCost + eqMaintenance;
+      const travel = 5000;
+      variable += travel;
+
+      const revenue = sponsorships + merchRevenue + prizeMoney;
+      const expenses = fixed + variable;
+      let pl = revenue - expenses;
+
+      // Debt behavior
+      if (S.cash + pl < 0) {
+        const deficit = -(S.cash + pl);
+        S.debt += deficit;
+        S.cash = 0;
+        pl = -deficit; // reflect effect on P/L after going to zero cash
+      } else {
+        S.cash += pl;
+      }
+
+      // Interest on existing debt
+      if (S.debt > 0) {
+        const interest = Math.round(S.debt * 0.05);
+        S.debt += interest;
+        S.cash -= interest;
+        log.push(`🏦 Debt interest applied: −${fmtMoney(interest)} this turn.`);
+      }
+
+      S.merchNext = newlyQueuedMerch;
+
+      // Rank updates
+      let promoted = false;
+      if (S.rank === 3 && S.tsr >= 70 && S.fans >= 7000) { S.rank = 2; promoted = true; }
+      else if (S.rank === 2 && S.tsr >= 80 && S.fans >= 12000) { S.rank = 1; promoted = true; }
+      if (promoted) {
+        S.sponsorshipTier = Math.min(4, S.sponsorshipTier + 1);
+        log.push('🚀 Rank update: You were promoted! Sponsorship tier improved.');
+      }
+
+      const fb = academicFeedback(pl, { revenue, expenses, fixed, variable });
+      elFinance.innerHTML =
+        `Total Revenue = Sponsorships (${fmtMoney(sponsorships)}) + Merch (${fmtMoney(merchRevenue)}) + Prize Money (${fmtMoney(prizeMoney)}) = <b>${fmtMoney(revenue)}</b><br>` +
+        `Total Expenses = Fixed (${fmtMoney(fixed)}) + Variable (${fmtMoney(variable)}) = <b>${fmtMoney(expenses)}</b><br>` +
+        `Profit/Loss (P/L) = <b>${fmtMoney(pl)}</b><br>` +
+        `Updated Cash Reserves: <b>${fmtMoney(S.cash)}</b> · Debt: <b>${fmtMoney(S.debt)}</b>`;
+      elFeedback.textContent = 'Academic Feedback: ' + fb;
+
+      // History snapshot
+      S.history.push({
+        turn: S.turn,
+        phase: S.phase,
+        season: S.season,
+        cash: S.cash,
+        salaries: S.salaries,
+        fans: S.fans,
+        tsr: S.tsr,
+        morale: S.morale,
+        rank: S.rank,
+        debt: S.debt,
+        revenue: { sponsorships, merchSales: merchRevenue, prizeMoney },
+        expenses: { fixed, variable },
+        pl
+      });
+
+      // Game over checks
+      if (S.cash < 0) S.negCashStreak = (S.negCashStreak || 0) + 1;
+      else S.negCashStreak = 0;
+
+      if (S.negCashStreak >= 2) {
+        gameOver('Financial Ruin', 'Cash reserves were below $0 for two consecutive turns.');
+        return;
+      }
+      if (S.morale <= 0) {
+        gameOver('Mutiny', 'Player morale fell to 0. The roster refuses to compete.');
+        return;
+      }
+
+      appendLog([
+        `Season ${S.season} — Turn ${S.turn} summary:`,
+        ...log,
+        '─'.repeat(40)
+      ]);
+
+      S.turn += 1;
+    }
+
+    function checkMastery() {
+      const mastery = (
+        S.rank === 1 &&
+        S.cash >= 1000000 &&
+        S.fans >= 50000 &&
+        S.tsr >= 85 &&
+        S.morale >= 80
+      );
+      if (mastery) S.mastered = true;
+      return mastery;
+    }
+
+    function finishSeason(reason) {
+      S.phase = 'ended';
+      S.endedReason = reason || 'standard';
+
+      const endingCash = S.cash;
+      const endingRank = S.rank;
+      const endingFans = S.fans;
+      const profit = endingCash - START.cash;
+      const avgTSR = S.history.length
+        ? Math.round(S.history.reduce((sum,h)=>sum+h.tsr,0)/S.history.length)
+        : S.tsr;
+      const avgMorale = S.history.length
+        ? Math.round(S.history.reduce((sum,h)=>sum+h.morale,0)/S.history.length)
+        : S.morale;
+
+      const rankSub = endingRank === 1 ? 100 : endingRank === 2 ? 70 : 40;
+      const profitSub = (() => {
+        const min = -150000;
+        const max = 300000;
+        const pct = clamp((profit - min) / (max - min), 0, 1);
+        return Math.round(pct * 100);
+      })();
+      const fanSub = clamp(Math.round((endingFans / 50000) * 100), 0, 100);
+      const moraleSub = clamp(Math.round((avgTSR + avgMorale)/2), 0, 100);
+      const debtSub = S.debt <= 0 ? 100 : clamp(100 - Math.round(S.debt/50000)*20, 0, 100);
+
+      const finalScore = Math.round(
+        rankSub   * 0.25 +
+        profitSub * 0.30 +
+        fanSub    * 0.20 +
+        moraleSub * 0.15 +
+        debtSub   * 0.10
+      );
+
+      const student = S.name && S.name.trim() ? S.name.trim() : 'Manager X';
+
+      const lines = [];
+      lines.push(`STOP the turn-based simulation. Session complete (${reason}).`);
+      lines.push('');
+      lines.push(`Student: ${student}`);
+      lines.push(`Seasons Played: ${S.season}`);
+      lines.push(`Final Cash: ${fmtMoney(endingCash)}`);
+      lines.push(`Final Team Rank: ${rankName(endingRank)}`);
+      lines.push(`Final Fan Base: ${endingFans.toLocaleString()} followers`);
+      lines.push(`Average TSR: ${avgTSR}`);
+      lines.push(`Average Morale: ${avgMorale}`);
+      lines.push(`Final Debt: ${fmtMoney(S.debt)}`);
+      lines.push('');
+      lines.push('Score Breakdown (0–100):');
+      lines.push(`  Rank Progress (25%): ${rankSub} → ${(rankSub*0.25).toFixed(1)}`);
+      lines.push(`  Profit / Cash (30%): ${profitSub} → ${(profitSub*0.30).toFixed(1)}`);
+      lines.push(`  Fan Growth (20%):   ${fanSub} → ${(fanSub*0.20).toFixed(1)}`);
+      lines.push(`  TSR & Morale (15%): ${moraleSub} → ${(moraleSub*0.15).toFixed(1)}`);
+      lines.push(`  Debt Mgmt (10%):    ${debtSub} → ${(debtSub*0.10).toFixed(1)}`);
+      lines.push('');
+      lines.push(`Final Score: ${finalScore} / 100`);
+      lines.push('');
+
+      let assessment = '';
+      const avoidedRuin = (S.negCashStreak || 0) < 2 && !(endingCash < 0);
+      const balanced = (avgTSR >= 60 && avgMorale >= 60) || (profit > 0 && endingRank <= 2);
+      const profitable = profit > 0;
+      const a = avoidedRuin ? 'You avoided financial ruin' : 'You flirted with financial ruin or relied heavily on debt';
+      const b = balanced ? 'balanced short-term performance with long-term capability building' : 'over-weighted either short-term pushes or long-term investments';
+      const c = profitable ? 'your cumulative revenues exceeded expenses to produce overall profit' : 'expenses ultimately outpaced revenues, yielding a loss';
+      let note = '';
+      if (endingCash < 0 && (S.negCashStreak || 0) < 2) {
+        note = ' Note: You ended with negative cash but avoided two consecutive negative turns.';
+      }
+      if (S.mastered) {
+        note += ' You also achieved Mastery by reaching Tier 1 with strong finances, fans, TSR, and morale.';
+      }
+      assessment = `${a}, ${b}, and ${c}. Consider how fixed vs variable costs and debt shaped your break-even point and liquidity over time.${note}`;
+
+      lines.push('Final Assessment:');
+      lines.push(assessment);
+
+      if (reason === 'mastery') {
+        lines.push('');
+        lines.push('You have mastered all core categories for this simulation. Further play is optional and purely exploratory.');
+      }
+
+      elGame.style.display = 'none';
+      elIntro.style.display = 'none';
+      elFinal.style.display = 'block';
+      elFinalText.textContent = lines.join('\n');
+
+      // Show or hide Extended button depending on reason
+      if (reason === 'standard') {
+        elContinueExtended.style.display = 'inline-flex';
+      } else {
+        elContinueExtended.style.display = 'none';
+      }
+
+      save();
+    }
+
+    function gameOver(reason, detail) {
+      S.phase = 'ended';
+      S.endedReason = reason;
+      const text =
+        `GAME OVER — ${reason}\n` +
+        `${detail}\n\n` +
+        `Final Cash: ${fmtMoney(S.cash)}\n` +
+        `Fans: ${S.fans.toLocaleString()}\n` +
+        `Rank: ${rankName(S.rank)}\n` +
+        `Turns played: ${S.turn}`;
+      elGame.style.display = 'none';
+      elIntro.style.display = 'none';
+      elFinal.style.display = 'block';
+      elFinalText.textContent = text;
+      elContinueExtended.style.display = 'none';
+      save();
+    }
+
+    // ---- Events ----
+    elName?.addEventListener('input', setNameFromInput);
+
+    elReset?.addEventListener('click', () => {
+      localStorage.removeItem('mgrx_v2_autosave');
+      S = { ...START };
+      if (elName) elName.value = '';
+      elIntro.style.display = 'block';
+      elGame.style.display = 'none';
+      elFinal.style.display = 'none';
+      promptWrap.style.display = 'none';
+      elLog.textContent = '';
+    });
+
+    elPrint?.addEventListener('click', () => window.print());
+    elPDF?.addEventListener('click', () => window.print());
+
+    elStart?.addEventListener('click', () => {
+      setNameFromInput();
+      S.phase = 'startup';
+      S.startupStep = 1;
+      S.turn = 1;
+      elIntro.style.display = 'none';
+      elFinal.style.display = 'none';
+      elGame.style.display = 'block';
+      renderDecisionsForPhase();
+      updateStatus();
+      save();
+    });
+
+    elRandom?.addEventListener('click', () => {
+      const pickRandom = (name) => {
+        const list = $$(`input[name=${name}]`);
+        if (list.length) list[Math.floor(Math.random() * list.length)].checked = true;
+      };
+      pickRandom('g1'); pickRandom('g2'); pickRandom('g3');
+      previewEffects();
+    });
+
+    elRun?.addEventListener('click', () => {
+      const sel = getSelections();
+      if (!(sel.d1 && sel.d2 && sel.d3)) return;
+
+      if (S.phase === 'startup') {
+        applyStartupTurn(sel);
+      } else if (S.phase === 'season') {
+        applySeasonTurn(sel);
+      }
+
+      // clear selections
+      $$('input[name=g1], input[name=g2], input[name=g3]').forEach(inp => inp.checked = false);
+      elRun.disabled = true;
+
+      // Check mastery or standard session completion
+      if (S.phase === 'season') {
+        if (checkMastery()) {
+          finishSeason('mastery');
+          return;
+        }
+        if (S.mode === 'standard' && S.turn > S.maxStandardTurns) {
+          // Show prompt
+          promptWrap.style.display = 'flex';
+        }
+      }
+
+      if (S.phase !== 'ended') {
+        renderDecisionsForPhase();
+        updateStatus();
+        save();
+      }
+    });
+
+    elUndo?.addEventListener('click', () => {
+      const snap = S.undoStack.pop();
+      if (!snap) return;
+      S = JSON.parse(snap);
+      elUndo.disabled = S.undoStack.length === 0;
+      renderDecisionsForPhase();
+      updateStatus();
+      save();
+    });
+
+    elEndEarly?.addEventListener('click', () => {
+      finishSeason('retire');
+    });
+
+    // Standard completion prompt buttons
+    btnEndStandard?.addEventListener('click', () => {
+      promptWrap.style.display = 'none';
+      finishSeason('standard');
+    });
+    btnGoExtended?.addEventListener('click', () => {
+      promptWrap.style.display = 'none';
+      S.mode = 'extended';
+      modeBadge.textContent = 'Extended Mode';
+      modeBadge.className = 'badge-mode extended';
+      renderDecisionsForPhase();
+      updateStatus();
+      save();
+    });
+    btnCancelPrompt?.addEventListener('click', () => {
+      promptWrap.style.display = 'none';
+      renderDecisionsForPhase();
+      updateStatus();
+    });
+
+    // Continue in Extended Mode from final screen (after standard session)
+    elContinueExtended?.addEventListener('click', () => {
+      S.mode = 'extended';
+      S.phase = 'season';
+      elFinal.style.display = 'none';
+      elGame.style.display = 'block';
+      renderDecisionsForPhase();
+      updateStatus();
+      save();
+    });
+
+    // Keyboard shortcuts 1–9 for quick radio selection
+    document.addEventListener('keydown', (e) => {
+      if (!elGame || elGame.style.display === 'none') return;
+      const k = e.key;
+      const map = {
+        '1': ['g1', 0], '2': ['g1', 1], '3': ['g1', 2],
+        '4': ['g2', 0], '5': ['g2', 1], '6': ['g2', 2],
+        '7': ['g3', 0], '8': ['g3', 1], '9': ['g3', 2]
+      };
+      if (map[k]) {
+        const [name, idx] = map[k];
+        const list = $$(`input[name=${name}]`);
+        if (list[idx]) {
+          list[idx].checked = true;
+          previewEffects();
+        }
+      }
+    });
+
+    // ---- Initial load / autosave resume ----
+    if (S.phase !== 'ended' && (S.history && S.history.length > 0 || S.phase !== 'startup')) {
+      elIntro.style.display = 'none';
+      elFinal.style.display = 'none';
+      elGame.style.display = 'block';
+      renderDecisionsForPhase();
+      updateStatus();
+    }
+
+    // ---- Minimal smoke tests ----
+    (function smokeTests() {
+      try {
+        console.groupCollapsed('Esports Sim v2 Smoke Tests');
+        console.assert(typeof winProbability() === 'number', 'winProbability returns a number');
+        const p = winProbability();
+        console.assert(p >= 0.05 && p <= 0.95, 'winProbability clamped between 5% and 95%');
+        const plTest = (1000 - (300 + 200));
+        console.assert(plTest === 500, 'P/L arithmetic sanity (1000 - 300 - 200 = 500)');
+        console.assert(!!document.getElementById('btnPDF'), 'btnPDF exists');
+        console.assert(!!document.getElementById('btnContinueExtended'), 'btnContinueExtended exists');
+        console.groupEnd();
+      } catch (err) {
+        console.warn('Smoke tests failed', err);
+      }
+    })();
+  });
+  </script>
+</body>
+</html>
