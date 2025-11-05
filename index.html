@@ -241,6 +241,7 @@
       .card,.log{background:#fff;border-color:#000;box-shadow:none;}
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <header>
@@ -372,13 +373,43 @@
 
     <!-- Final Scoring -->
     <section id="finalScreen" class="card" style="display:none;">
-      <h2 style="margin-top:0;">Final Scoring Screen</h2>
-      <pre id="finalText" class="muted" style="white-space:pre-wrap;"></pre>
-      <div class="actions" style="margin-top:10px;">
-        <button class="btn good" id="btnPDF">Save Final Report (PDF)</button>
-        <button class="btn" id="btnContinueExtended">Continue in Extended Mode</button>
+    <section id="finalScreen" class="card" style="display:none;">
+  <h2 style="margin-top:0;">Final Scoring Screen</h2>
+  <pre id="finalText" class="muted" style="white-space:pre-wrap;"></pre>
+
+  <!-- Visual analytics panel -->
+  <div id="analyticsPanel" style="margin-top:12px;">
+    <h3 style="margin:0 0 6px 0;">Visual Breakdown</h3>
+
+    <div class="grid" style="grid-template-columns:1.2fr 1fr;gap:12px;">
+      <div class="card">
+        <h4 style="margin-top:0;">Cash Flow Over Time vs Average</h4>
+        <canvas id="cashChart" height="140"></canvas>
       </div>
-    </section>
+      <div class="card">
+        <h4 style="margin-top:0;">TSR Progression vs Average</h4>
+        <canvas id="tsrChart" height="140"></canvas>
+      </div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1.2fr 1fr;gap:12px;margin-top:12px;">
+      <div class="card">
+        <h4 style="margin-top:0;">Key Decision Moments</h4>
+        <ul id="keyMomentsList" class="muted" style="font-size:12px;padding-left:18px;margin:6px 0;"></ul>
+      </div>
+      <div class="card">
+        <h4 style="margin-top:0;">“What if?” Scenarios</h4>
+        <ul id="whatIfList" class="muted" style="font-size:12px;padding-left:18px;margin:6px 0;"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions" style="margin-top:10px;">
+    <button class="btn good" id="btnPDF">Save Final Report (PDF)</button>
+    <button class="btn" id="btnContinueExtended">Continue in Extended Mode</button>
+  </div>
+</section>
+
 
     <!-- Standard Session Prompt -->
     <div id="standardPrompt">
@@ -442,6 +473,16 @@
     const btnEndStandard = $('#btnEndStandard');
     const btnGoExtended = $('#btnGoExtended');
     const btnCancelPrompt = $('#btnCancelPrompt');
+     
+    // Analytics DOM
+    const cashChartCanvas = $('#cashChart');
+    const tsrChartCanvas = $('#tsrChart');
+    const keyMomentsList = $('#keyMomentsList');
+    const whatIfList = $('#whatIfList');
+
+    // Chart instances
+    let cashChartInstance = null;
+    let tsrChartInstance = null;
 
     const kTurn = $('#kTurn');
     const kPhase = $('#kPhase');
@@ -1166,6 +1207,18 @@
         `Updated Cash Reserves: <b>${fmtMoney(S.cash)}</b> · Debt: <b>${fmtMoney(S.debt)}</b>`;
       elFeedback.textContent = 'Academic Feedback: ' + fb;
 
+            const decisions = {
+        ops: ops ? ops.title : null,
+        mkt: mkt ? mkt.title : null,
+        ply: ply ? ply.title : null
+      };
+
+      const bigFlags = {
+        opsBig: ops && (((ops.varCost || 0) >= 15000) || ((ops.fixedDelta || 0) > 0)),
+        mktBig: mkt && (((mkt.varCost || 0) >= 15000) || ((mkt.merchNext || 0) > 0)),
+        plyBig: ply && (((ply.varCost || 0) >= 10000) || ply.bootcampRisk)
+      };
+
       S.history.push({
         turn: S.turn,
         phase: S.phase,
@@ -1179,7 +1232,10 @@
         debt: S.debt,
         revenue: { sponsorships, merchSales: merchRevenue, prizeMoney },
         expenses: { fixed, variable },
-        pl
+        pl,
+        decisions,
+        isWin,
+        bigFlags
       });
 
       if (S.cash < 0) S.negCashStreak = (S.negCashStreak || 0) + 1;
@@ -1214,7 +1270,182 @@
       if (mastery) S.mastered = true;
       return mastery;
     }
+    function renderAnalytics() {
+      if (!S.history || !S.history.length) return;
+      if (typeof Chart === 'undefined') return;
+      if (!cashChartCanvas || !tsrChartCanvas) return;
 
+      const labels = S.history.map(h => `T${h.turn}`);
+      const actualCash = S.history.map(h => h.cash);
+      const actualTSR = S.history.map(h => h.tsr);
+
+      // Simple “average player” baselines
+      const avgCash = [];
+      const avgTSR = [];
+      let baselineCash = 250000;
+      S.history.forEach((h, i) => {
+        baselineCash += 10000; // assume a modest +10K per turn “average”
+        avgCash.push(baselineCash);
+        avgTSR.push(60 + Math.min(i * 2, 25)); // TSR slowly trending upward
+      });
+
+      // Identify key moments (big decisions)
+      const keyMoments = S.history
+        .map((h, idx) => ({ h, idx }))
+        .filter(({ h }) => h.bigFlags && (h.bigFlags.opsBig || h.bigFlags.mktBig || h.bigFlags.plyBig));
+
+      // Clear lists
+      if (keyMomentsList) keyMomentsList.innerHTML = '';
+      if (whatIfList) whatIfList.innerHTML = '';
+
+      // Populate key decision moments (up to last 6 interesting turns)
+      keyMoments.slice(-6).forEach(({ h }) => {
+        const li = document.createElement('li');
+        const titles = [];
+        if (h.decisions.ops && h.bigFlags.opsBig) titles.push(`Ops: "${h.decisions.ops}"`);
+        if (h.decisions.mkt && h.bigFlags.mktBig) titles.push(`Mkt: "${h.decisions.mkt}"`);
+        if (h.decisions.ply && h.bigFlags.plyBig) titles.push(`Player: "${h.decisions.ply}"`);
+
+        li.textContent =
+          `Turn ${h.turn}: ` +
+          (titles.length ? titles.join(' · ') : 'Notable impact on cash/TSR/fans.') +
+          ` — Cash ${fmtMoney(h.cash)}, TSR ${h.tsr}, Fans ${h.fans.toLocaleString()}.`;
+        keyMomentsList?.appendChild(li);
+      });
+
+      // “What if?” scenarios – very rough, local comparisons
+      function bestCheaperAlt(deck, actualTitle) {
+        const actual = deck.find(c => c.title === actualTitle);
+        if (!actual) return null;
+        return deck.reduce((best, c) => {
+          if (c.title === actualTitle) return best;
+          if (!best) return c;
+          return (c.varCost || 0) < (best.varCost || 0) ? c : best;
+        }, null);
+      }
+
+      keyMoments.slice(-3).forEach(({ h }) => {
+        if (!h.decisions) return;
+        const li = document.createElement('li');
+        let text = `Turn ${h.turn}: `;
+
+        // Try one category for each scenario, rotating
+        if (h.bigFlags.opsBig && h.decisions.ops) {
+          const alt = bestCheaperAlt(SEASON_DECKS.ops, h.decisions.ops);
+          if (alt) {
+            const actual = SEASON_DECKS.ops.find(c => c.title === h.decisions.ops);
+            const cashDiff = (actual.varCost || 0) - (alt.varCost || 0);
+            const moraleDiff = (actual.morale || 0) - (alt.morale || 0);
+            const tsrDiff = (actual.tsr || 0) - (alt.tsr || 0);
+            text += `You chose "${h.decisions.ops}". If you had picked "${alt.title}" instead, your cash might be about ${fmtMoney(cashDiff)} higher, with morale ~${moraleDiff >= 0 ? '-' : '+'}${Math.abs(moraleDiff)} and TSR ~${tsrDiff >= 0 ? '-' : '+'}${Math.abs(tsrDiff)} different (holding other decisions constant).`;
+          }
+        } else if (h.bigFlags.mktBig && h.decisions.mkt) {
+          const alt = bestCheaperAlt(SEASON_DECKS.mkt, h.decisions.mkt);
+          if (alt) {
+            const actual = SEASON_DECKS.mkt.find(c => c.title === h.decisions.mkt);
+            const cashDiff = (actual.varCost || 0) - (alt.varCost || 0);
+            const fanDiff = (actual.fans || 0) - (alt.fans || 0);
+            text += `You ran "${h.decisions.mkt}". If you had chosen "${alt.title}", you might have saved about ${fmtMoney(cashDiff)} but ended with roughly ${fanDiff >= 0 ? 'fewer' : 'more'} ${Math.abs(fanDiff)} fans (all else equal).`;
+          }
+        } else if (h.bigFlags.plyBig && h.decisions.ply) {
+          const alt = bestCheaperAlt(SEASON_DECKS.ply, h.decisions.ply);
+          if (alt) {
+            const actual = SEASON_DECKS.ply.find(c => c.title === h.decisions.ply);
+            const cashDiff = (actual.varCost || 0) - (alt.varCost || 0);
+            const moraleDiff = (actual.morale || 0) - (alt.morale || 0);
+            const tsrDiff = (actual.tsr || 0) - (alt.tsr || 0);
+            text += `You chose player plan "${h.decisions.ply}". A lighter option like "${alt.title}" might have changed cash by ~${fmtMoney(cashDiff)} and shifted morale/TSR by about ${moraleDiff >= 0 ? '-' : '+'}${Math.abs(moraleDiff)} morale and ${tsrDiff >= 0 ? '-' : '+'}${Math.abs(tsrDiff)} TSR.`;
+          }
+        }
+
+        if (text.endsWith(`Turn ${h.turn}: `)) {
+          text += 'Changing this decision would have altered cash flow and TSR, but the exact impact is complex because later turns build on it.';
+        }
+        li.textContent = text;
+        whatIfList?.appendChild(li);
+      });
+
+      // Build charts
+      if (cashChartInstance) cashChartInstance.destroy();
+      if (tsrChartInstance) tsrChartInstance.destroy();
+
+      cashChartInstance = new Chart(cashChartCanvas, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Your Cash',
+              data: actualCash,
+              tension: 0.25,
+              borderWidth: 2,
+              pointRadius: 3
+            },
+            {
+              label: 'Average Player (Estimate)',
+              data: avgCash,
+              borderDash: [4,3],
+              tension: 0.25,
+              borderWidth: 1.5,
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { labels: { color: '#e5e7ff', font: { size: 11 } } },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: {
+            x: { ticks: { color:'#9ca3ff', font:{size:10} }, grid:{display:false} },
+            y: { ticks: { color:'#9ca3ff', font:{size:10} }, grid:{color:'#1f293b'} }
+          }
+        }
+      });
+
+      tsrChartInstance = new Chart(tsrChartCanvas, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Your TSR',
+              data: actualTSR,
+              tension: 0.25,
+              borderWidth: 2,
+              pointRadius: 3
+            },
+            {
+              label: 'Average TSR (Estimate)',
+              data: avgTSR,
+              borderDash: [4,3],
+              tension: 0.25,
+              borderWidth: 1.5,
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { labels: { color: '#e5e7ff', font: { size: 11 } } },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: {
+            x: { ticks: { color:'#9ca3ff', font:{size:10} }, grid:{display:false} },
+            y: {
+              suggestedMin: 40,
+              suggestedMax: 100,
+              ticks: { color:'#9ca3ff', font:{size:10} },
+              grid:{color:'#1f293b'}
+            }
+          }
+        }
+      });
+    }
+
+    
     function finishSeason(reason) {
       S.phase = 'ended';
       S.endedReason = reason || 'standard';
@@ -1306,7 +1537,7 @@
       } else {
         elContinueExtended.style.display = 'none';
       }
-
+      renderAnalytics();
       save();
     }
 
@@ -1325,6 +1556,7 @@
       elFinal.style.display = 'block';
       elFinalText.textContent = text;
       elContinueExtended.style.display = 'none';
+      renderAnalytics();
       save();
     }
 
