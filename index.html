@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Esports Company Management Simulation v2.0</title>
+  <title>Esports Company Management Simulation v2.3</title>
   <style>
     :root{
       --bg:#070b16;
@@ -259,7 +259,7 @@
     <section id="intro" class="card">
       <h2 style="margin-top:0;">Welcome, Manager X</h2>
       <p class="muted">
-        You are the founder of a brand-new esports organization. You’ve just qualified into <b>Tier 3 (Rookie)</b>
+        You are the founder of a brand-new esports organization. You have just qualified into <b>Tier 3 (Rookie)</b>
         and secured <b>$250,000</b> to launch your team. Your job is to make strategic choices about
         <b>space</b>, <b>equipment</b>, <b>players</b>, and ongoing <b>operations</b>.
       </p>
@@ -278,9 +278,9 @@
       </details>
       <ul class="muted" style="font-size:12px;margin-top:10px;">
         <li><b>Startup Phase (1 turn):</b> choose your facility, equipment, and players.</li>
-        <li><b>Season Phase:</b> each turn, pick one decision in each of three categories.</li>
+        <li><b>Season Phase:</b> each turn, 3 random cards are drawn from a deck of ~30 options in each category.</li>
         <li><b>Win/Loss Logic:</b> wins bring prize money and fans; losses hurt sponsors and fans.</li>
-        <li><b>Game Over:</b> two turns in a row with negative cash (Financial Ruin) or morale hitting zero (Mutiny).</li>
+        <li><b>Game Over:</b> two turns in a row with negative cash (Financial Ruin) or morale reaching zero (Mutiny).</li>
       </ul>
       <div class="actions" style="margin-top:10px;">
         <button class="btn" id="btnStart">Start Simulation</button>
@@ -347,7 +347,6 @@
 
       <div id="scenarioBox" class="event"></div>
 
-      <!-- Dynamic decisions -->
       <div class="choices">
         <fieldset id="col1"></fieldset>
         <fieldset id="col2"></fieldset>
@@ -386,7 +385,7 @@
       <div class="modal">
         <h3 style="margin-top:0;">Standard Session Complete</h3>
         <p class="muted">
-          You’ve reached the end of the <b>Standard Play</b> window (designed for ~30 minutes).
+          You have reached the end of the <b>Standard Play</b> window (designed for about 30 minutes).
           You can end now and receive your Final Score, or switch into <b>Extended Mode</b> and keep managing your org.
         </p>
         <div class="actions" style="margin-top:10px;">
@@ -402,7 +401,7 @@
   <div class="footerbar">
     <div class="footer-wrap">
       <span class="muted">
-        Make one choice per column each turn. Wins earn prize money & fans; losses apply a sponsor penalty and fan drop.
+        Make one choice per column each turn. Wins earn prize money and fans; losses apply a sponsor penalty and fan drop.
       </span>
       <div class="row">
         <span id="modeBadge" class="badge-mode standard">Standard Mode</span>
@@ -493,7 +492,6 @@
       merchNext: 0,
       streak: 0,
       negCashStreak: 0,
-      startupStep: 1,       // kept for compatibility but used as a flag only
       problemCooldown: 0,
       name: '',
       history: [],
@@ -504,152 +502,193 @@
 
     let S = load() || { ...START };
 
-    // ---- Decision Configs ----
-    const PHASE_CONFIG = {
-      startup: {
-        label: 'Startup',
-        columns: [
-          {
-            legend: '1) Facilities',
-            group: 'g1',
-            options: [
-              {
-                id: 'fac_shared',
-                title: 'Shared Office Space',
-                desc: 'Low rent, modest setup. Fixed costs +$5K/turn, small morale boost.'
-              },
-              {
-                id: 'fac_leased',
-                title: 'Leased Esports Facility',
-                desc: 'Higher rent but better practice environment. Fixed +$10K/turn, TSR & morale up.'
-              },
-              {
-                id: 'fac_house',
-                title: 'Custom Gaming House',
-                desc: 'Expensive but premium. Fixed +$18K/turn, big morale cap & TSR potential.'
-              }
-            ]
-          },
-          {
-            legend: '2) Equipment Setup',
-            group: 'g2',
-            options: [
-              {
-                id: 'eq_basic',
-                title: 'Basic Gaming PCs',
-                desc: 'Budget rigs. TSR cap modest, low upfront impact on cash.'
-              },
-              {
-                id: 'eq_pro',
-                title: 'Pro-Level Setup',
-                desc: 'Stronger performance. TSR +5, brand reputation up slightly.'
-              },
-              {
-                id: 'eq_premium',
-                title: 'Premium Streaming Rig',
-                desc: 'Top gear & content ready. Higher TSR ceiling & fans from streaming.'
-              }
-            ]
-          },
-          {
-            legend: '3) Player Recruitment',
-            group: 'g3',
-            options: [
-              {
-                id: 'ros_local',
-                title: 'Local Rookies',
-                desc: 'Cheap contracts, low starting TSR, high morale potential.'
-              },
-              {
-                id: 'ros_mix',
-                title: 'Semi-Pro Mix',
-                desc: 'Balanced costs. TSR +5, morale moderate, fans modest.'
-              },
-              {
-                id: 'ros_stars',
-                title: 'Star Free Agents',
-                desc: 'High salaries. TSR +10, starting fans +2,000, morale demanding.'
-              }
-            ]
-          }
-        ]
-      },
-      season: {
-        label: 'Season Play',
-        columns: [
-          {
-            legend: '1) Operations',
-            group: 'g1',
-            options: [
-              {
-                id: 'ops_analyst',
-                title: 'Hire Analyst ($20K)',
-                desc: 'TSR +5; adds +$5K to fixed costs each turn.'
-              },
-              {
-                id: 'ops_house',
-                title: 'Upgrade Team House ($40K)',
-                desc: 'Morale +10; Fans +500.'
-              },
-              {
-                id: 'ops_lean',
-                title: 'Stay Lean ($0)',
-                desc: 'No spend, but TSR −2.'
-              }
-            ]
-          },
-          {
-            legend: '2) Marketing',
-            group: 'g2',
-            options: [
-              {
-                id: 'mkt_merch',
-                title: 'Launch Merch ($25K)',
-                desc: 'Fans +1,000; queues +$10K merch revenue for next turn.'
-              },
-              {
-                id: 'mkt_local',
-                title: 'Host Local Event ($30K)',
-                desc: 'Fans +2,000; Morale +5.'
-              },
-              {
-                id: 'mkt_minimal',
-                title: 'Minimal Social ($0)',
-                desc: 'No spend, slow organic growth only.'
-              }
-            ]
-          },
-          {
-            legend: '3) Player Focus',
-            group: 'g3',
-            options: [
-              {
-                id: 'ply_bootcamp',
-                title: 'Intense Bootcamp ($0)',
-                desc: 'TSR +8; Morale −10 (burnout risk).'
-              },
-              {
-                id: 'ply_retreat',
-                title: 'Team Retreat ($10K)',
-                desc: 'Morale +10; TSR −3.'
-              },
-              {
-                id: 'ply_balanced',
-                title: 'Balanced Schedule ($0)',
-                desc: 'TSR +2; Morale +2.'
-              }
-            ]
-          }
-        ]
-      }
+    // ---------- STARTUP CONFIG ----------
+    const STARTUP_CONFIG = {
+      columns: [
+        {
+          legend: '1) Facilities',
+          group: 'g1',
+          options: [
+            {
+              id: 'fac_shared',
+              title: 'Shared Office Space',
+              desc: 'Low rent, modest setup. Fixed +$5K/turn, morale +3.'
+            },
+            {
+              id: 'fac_leased',
+              title: 'Leased Esports Facility',
+              desc: 'Higher rent but strong practice. Fixed +$10K/turn, TSR and morale up.'
+            },
+            {
+              id: 'fac_house',
+              title: 'Custom Gaming House',
+              desc: 'Expensive but premium. Fixed +$18K/turn, big morale and TSR potential.'
+            }
+          ]
+        },
+        {
+          legend: '2) Equipment Setup',
+          group: 'g2',
+          options: [
+            {
+              id: 'eq_basic',
+              title: 'Basic Gaming PCs',
+              desc: 'Budget rigs. Low cost, limited performance.'
+            },
+            {
+              id: 'eq_pro',
+              title: 'Pro-Level Setup',
+              desc: 'Stronger PCs. TSR +5, brand rep up slightly.'
+            },
+            {
+              id: 'eq_premium',
+              title: 'Premium Streaming Rig',
+              desc: 'Top gear and content-ready. TSR +5, fans from streaming.'
+            }
+          ]
+        },
+        {
+          legend: '3) Player Recruitment',
+          group: 'g3',
+          options: [
+            {
+              id: 'ros_local',
+              title: 'Local Rookies',
+              desc: 'Cheap contracts, low TSR, high morale potential.'
+            },
+            {
+              id: 'ros_mix',
+              title: 'Semi-Pro Mix',
+              desc: 'Balanced costs. TSR +5, morale moderate, fans modest.'
+            },
+            {
+              id: 'ros_stars',
+              title: 'Star Free Agents',
+              desc: 'High salaries. TSR +10, +2K fans, morale fragile.'
+            }
+          ]
+        }
+      ]
     };
 
-    // ---- Rendering helpers ----
-    function renderDecisionsForPhase() {
-      const cfg = PHASE_CONFIG[S.phase] || PHASE_CONFIG.season;
-      const cols = [col1, col2, col3];
+    // ---------- SEASON DECKS (30 cards per category) ----------
+    const SEASON_DECKS = {
+      ops: [
+        { id:'ops_analyst',          title:'Hire Analyst ($20K)',                    desc:'Var −$20K, fixed +$5K/turn, TSR +5.',              varCost:20000, fixedDelta:5000, tsr:+5 },
+        { id:'ops_assistant',        title:'Hire Team Manager ($15K)',              desc:'Var −$15K, fixed +$4K/turn, morale +4.',          varCost:15000, fixedDelta:4000, morale:+4 },
+        { id:'ops_data',             title:'Invest in Data Tools ($10K)',           desc:'Var −$10K, TSR +3, brand rep +0.03.',            varCost:10000, tsr:+3, brandDelta:+0.03 },
+        { id:'ops_gym',              title:'Add Gym Memberships ($8K)',             desc:'Var −$8K, morale +5.',                            varCost:8000,  morale:+5 },
+        { id:'ops_diet',             title:'Sports Nutrition Program ($12K)',       desc:'Var −$12K, TSR +2, morale +2.',                   varCost:12000, tsr:+2, morale:+2 },
+        { id:'ops_house_upgrade',    title:'Facility Deep Clean & Repair ($18K)',   desc:'Var −$18K, facility condition +10, morale +3.',  varCost:18000, facilityCond:+10, morale:+3 },
+        { id:'ops_travel_upgrade',   title:'Upgrade Travel Comfort ($10K)',         desc:'Var −$10K, morale +3, TSR +1.',                   varCost:10000, morale:+3, tsr:+1 },
+        { id:'ops_cut_staff',        title:'Cut Support Staff ($0)',                desc:'Fixed −$5K/turn, morale −5.',                     varCost:0,     fixedDelta:-5000, morale:-5 },
+        { id:'ops_stream_room',      title:'Build Stream Studio ($25K)',            desc:'Var −$25K, fans +800, brand +0.05.',             varCost:25000, fans:+800, brandDelta:+0.05 },
+        { id:'ops_sleep',            title:'Sleep & Wellness Program ($12K)',       desc:'Var −$12K, morale +6, TSR +1.',                  varCost:12000, morale:+6, tsr:+1 },
+        { id:'ops_interns',          title:'Bring in Interns ($5K)',                desc:'Var −$5K, fixed +$1K, morale +1, fans +100.',    varCost:5000,  fixedDelta:1000, morale:+1, fans:+100 },
+        { id:'ops_rent_negotiate',   title:'Negotiate Rent ($0)',                   desc:'Fixed −$3K/turn, brand rep −0.02.',              varCost:0,     fixedDelta:-3000, brandDelta:-0.02 },
+        { id:'ops_hr_policy',        title:'Formal HR Policies ($6K)',              desc:'Var −$6K, morale +3 over time.',                  varCost:6000,  morale:+3 },
+        { id:'ops_security',         title:'Upgrade Security ($9K)',                desc:'Var −$9K, protects equipment; small brand boost.',varCost:9000,  brandDelta:+0.02 },
+        { id:'ops_it_upgrade',       title:'IT Infrastructure Upgrade ($14K)',      desc:'Var −$14K, fewer tech issues, TSR +2.',          varCost:14000, tsr:+2 },
+        { id:'ops_backup_power',     title:'Backup Power System ($11K)',            desc:'Var −$11K, reduces chance of problem events.',    varCost:11000, facilityCond:+5 },
+        { id:'ops_head_coach',       title:'Hire Head Coach ($22K)',                desc:'Var −$22K, fixed +$8K/turn, TSR +6.',            varCost:22000, fixedDelta:8000, tsr:+6 },
+        { id:'ops_scrim_partner',    title:'Exclusive Scrim Partners ($13K)',       desc:'Var −$13K, TSR +4.',                             varCost:13000, tsr:+4 },
+        { id:'ops_transport_contract',title:'Travel Contract ($0)',                 desc:'Fixed +$2K/turn, reduces variable travel risk.',  varCost:0,     fixedDelta:2000 },
+        { id:'ops_cleaning_service', title:'Pro Cleaning Service ($7K)',            desc:'Var −$7K, facility condition +8, morale +2.',    varCost:7000,  facilityCond:+8, morale:+2 },
+        { id:'ops_healthcare',       title:'Player Healthcare Plan ($15K)',         desc:'Var −$15K, morale +5.',                           varCost:15000, morale:+5 },
+        { id:'ops_video_review_room',title:'Video Review Room ($16K)',              desc:'Var −$16K, TSR +4.',                             varCost:16000, tsr:+4 },
+        { id:'ops_qa_team',          title:'Quality Assurance Staff ($10K)',        desc:'Var −$10K, brand +0.03.',                        varCost:10000, brandDelta:+0.03 },
+        { id:'ops_insurance',        title:'Comprehensive Insurance ($9K)',         desc:'Var −$9K, protects vs big losses.',              varCost:9000 },
+        { id:'ops_benchmark_trip',   title:'Benchmark Visit to Pro Org ($18K)',     desc:'Var −$18K, TSR +3, brand +0.03.',                varCost:18000, tsr:+3, brandDelta:+0.03 },
+        { id:'ops_staff_retreat',    title:'Staff-Only Retreat ($12K)',             desc:'Var −$12K, morale +4.',                          varCost:12000, morale:+4 },
+        { id:'ops_automation',       title:'Workflow Automation Software ($15K)',   desc:'Var −$15K, fixed −$3K/turn, morale +1.',         varCost:15000, fixedDelta:-3000, morale:+1 },
+        { id:'ops_legal_consult',    title:'Legal Consultation ($8K)',              desc:'Var −$8K, protects brand in long run.',          varCost:8000 },
+        { id:'ops_accounting',       title:'Hire Accounting Firm ($10K)',           desc:'Var −$10K, better cost control; small fixed cut.',varCost:10000, fixedDelta:-2000 },
+        { id:'ops_green_initiative', title:'Green Facility Initiative ($9K)',       desc:'Var −$9K, brand +0.04, morale +1.',              varCost:9000,  brandDelta:+0.04, morale:+1 }
+      ],
+      mkt: [
+        { id:'mkt_merch',            title:'Launch Merch ($25K)',                   desc:'Var −$25K, +1K fans, +$10K merch next turn.',       varCost:25000, fans:+1000, merchNext:10000 },
+        { id:'mkt_local',            title:'Host Local Event ($30K)',               desc:'Var −$30K, +2K fans, morale +5.',                   varCost:30000, fans:+2000, morale:+5 },
+        { id:'mkt_minimal',          title:'Minimal Social ($0)',                   desc:'No spend, no immediate change.',                    varCost:0 },
+        { id:'mkt_stream',           title:'Weekly Stream Schedule ($8K)',          desc:'Var −$8K, fans +600, brand +0.04.',                 varCost:8000,  fans:+600, brandDelta:+0.04 },
+        { id:'mkt_college',          title:'Campus Activation ($15K)',              desc:'Var −$15K, fans +1200, brand +0.03.',               varCost:15000, fans:+1200, brandDelta:+0.03 },
+        { id:'mkt_collab',           title:'Collab with Influencer ($20K)',         desc:'Var −$20K, fans +1500, merch next +$5K.',           varCost:20000, fans:+1500, merchNext:5000 },
+        { id:'mkt_docu',             title:'Mini-Doc Series ($18K)',                desc:'Var −$18K, fans +900, morale +3.',                  varCost:18000, fans:+900, morale:+3 },
+        { id:'mkt_vip',              title:'VIP Fan Discord ($5K)',                 desc:'Var −$5K, fans +400, brand +0.02.',                 varCost:5000,  fans:+400, brandDelta:+0.02 },
+        { id:'mkt_cheap_ads',        title:'Cheap Online Ads ($6K)',                desc:'Var −$6K, fans +500.',                              varCost:6000,  fans:+500 },
+        { id:'mkt_charity',          title:'Charity Showmatch ($10K)',              desc:'Var −$10K, fans +800, brand +0.05.',                varCost:10000, fans:+800, brandDelta:+0.05 },
+        { id:'mkt_meet_greet',       title:'In-Person Meet & Greet ($12K)',         desc:'Var −$12K, fans +700, morale +2.',                  varCost:12000, fans:+700, morale:+2 },
+        { id:'mkt_premium_brand',    title:'Premium Brand Campaign ($25K)',         desc:'Var −$25K, brand +0.08, fans +900.',                varCost:25000, brandDelta:+0.08, fans:+900 },
+        { id:'mkt_tiktok_challenge', title:'TikTok Challenge ($7K)',                desc:'Var −$7K, fans +900, brand +0.03.',                 varCost:7000,  fans:+900, brandDelta:+0.03 },
+        { id:'mkt_club_partners',    title:'Partner with College Esports Clubs ($9K)',desc:'Var −$9K, fans +1000, brand +0.03.',             varCost:9000,  fans:+1000, brandDelta:+0.03 },
+        { id:'mkt_newsletter',       title:'Launch Email Newsletter ($4K)',         desc:'Var −$4K, fans +300, better retention.',            varCost:4000,  fans:+300 },
+        { id:'mkt_highlight_reel',   title:'Weekly Highlight Reels ($6K)',          desc:'Var −$6K, fans +600, brand +0.02.',                 varCost:6000,  fans:+600, brandDelta:+0.02 },
+        { id:'mkt_memes',            title:'Meme Marketing Push ($3K)',             desc:'Var −$3K, fans +400, low risk.',                    varCost:3000,  fans:+400 },
+        { id:'mkt_roadshow',         title:'Regional Roadshow ($20K)',              desc:'Var −$20K, fans +1600, brand +0.04.',               varCost:20000, fans:+1600, brandDelta:+0.04 },
+        { id:'mkt_sponsor_showcase', title:'Sponsor Showcase Stream ($5K)',         desc:'Var −$5K, brand +0.05, small fans boost.',          varCost:5000,  brandDelta:+0.05, fans:+300 },
+        { id:'mkt_viewing_party',    title:'Offline Viewing Party ($11K)',          desc:'Var −$11K, fans +900, morale +2.',                  varCost:11000, fans:+900, morale:+2 },
+        { id:'mkt_podcast',          title:'Team Podcast Launch ($9K)',             desc:'Var −$9K, fans +700, brand +0.03.',                 varCost:9000,  fans:+700, brandDelta:+0.03 },
+        { id:'mkt_cross_promo',      title:'Cross-Promote with Other Org ($10K)',   desc:'Var −$10K, fans +1000.',                            varCost:10000, fans:+1000 },
+        { id:'mkt_coach_clinic',     title:'Coach-Led Clinic ($8K)',                desc:'Var −$8K, fans +500, brand +0.02.',                 varCost:8000,  fans:+500, brandDelta:+0.02 },
+        { id:'mkt_student_discount', title:'Student Discount Program ($6K)',        desc:'Var −$6K, fans +600 (college age).',                varCost:6000,  fans:+600 },
+        { id:'mkt_loyalty_program',  title:'Fan Loyalty Program ($7K)',             desc:'Var −$7K, fans +500; retention boost.',             varCost:7000,  fans:+500 },
+        { id:'mkt_merch_collab',     title:'Merch Collab with Artist ($18K)',       desc:'Var −$18K, fans +1200, merch next +$8K.',           varCost:18000, fans:+1200, merchNext:8000 },
+        { id:'mkt_giveaway',         title:'Social Media Giveaway ($5K)',           desc:'Var −$5K, fans +700.',                              varCost:5000,  fans:+700 },
+        { id:'mkt_ingame_ads',       title:'In-Game Ad Partnership ($14K)',         desc:'Var −$14K, brand +0.06, fans +800.',                varCost:14000, brandDelta:+0.06, fans:+800 },
+        { id:'mkt_fan_survey',       title:'Fan Survey & Feedback ($4K)',           desc:'Var −$4K, morale +1, brand +0.02.',                 varCost:4000,  morale:+1, brandDelta:+0.02 },
+        { id:'mkt_ugc_campaign',     title:'User-Generated Content Campaign ($6K)', desc:'Var −$6K, fans +600.',                              varCost:6000,  fans:+600 }
+      ],
+      ply: [
+        { id:'ply_bootcamp',         title:'Intense Bootcamp ($0)',                 desc:'TSR +8; morale −10; higher injury risk.',            varCost:0,     tsr:+8,  morale:-10, bootcampRisk:true },
+        { id:'ply_retreat',          title:'Team Retreat ($10K)',                   desc:'Var −$10K, morale +10, TSR −3.',                    varCost:10000, morale:+10, tsr:-3 },
+        { id:'ply_balanced',         title:'Balanced Schedule ($0)',                desc:'TSR +2, morale +2.',                                varCost:0,     tsr:+2,  morale:+2 },
+        { id:'ply_vod',              title:'VOD Review Focus ($0)',                 desc:'TSR +4, morale −2.',                                varCost:0,     tsr:+4,  morale:-2 },
+        { id:'ply_content_day',      title:'Content Day ($3K)',                     desc:'Var −$3K, fans +600, morale +1, TSR −1.',          varCost:3000,  fans:+600, morale:+1, tsr:-1 },
+        { id:'ply_mental_coach',     title:'Mental Performance Coach ($12K)',       desc:'Var −$12K, morale +7.',                             varCost:12000, morale:+7 },
+        { id:'ply_substitute',       title:'Trial Substitute Player ($5K)',         desc:'Var −$5K, TSR +3 short term.',                      varCost:5000,  tsr:+3 },
+        { id:'ply_stream_focus',     title:'Stream-First Week ($0)',                desc:'Fans +700, TSR −2.',                                varCost:0,     fans:+700, tsr:-2 },
+        { id:'ply_role_swap',        title:'Experiment Role Swap ($0)',             desc:'TSR +5 if it lands; morale −3.',                    varCost:0,     tsr:+5,  morale:-3 },
+        { id:'ply_health_week',      title:'Health Reset Week ($4K)',               desc:'Var −$4K, morale +6.',                              varCost:4000,  morale:+6 },
+        { id:'ply_solo_queue',       title:'Solo Queue Grind ($0)',                 desc:'TSR +3, morale −1.',                                varCost:0,     tsr:+3,  morale:-1 },
+        { id:'ply_media_training',   title:'Media Training ($6K)',                  desc:'Var −$6K, brand +0.03, morale +1.',                 varCost:6000,  brandDelta:+0.03, morale:+1 },
+        { id:'ply_micro_practice',   title:'Micro Mechanics Practice ($0)',         desc:'TSR +4, morale −1.',                                varCost:0,     tsr:+4,  morale:-1 },
+        { id:'ply_macro_review',     title:'Macro Game Review ($0)',                desc:'TSR +3, morale +0.',                                varCost:0,     tsr:+3 },
+        { id:'ply_scrim_block',      title:'Heavy Scrim Block ($0)',                desc:'TSR +6, morale −4; moderate injury risk.',          varCost:0,     tsr:+6,  morale:-4, bootcampRisk:true },
+        { id:'ply_flex_queue',       title:'Flex Queue Night ($2K)',                desc:'Var −$2K, morale +3, small TSR dip.',               varCost:2000,  morale:+3, tsr:-1 },
+        { id:'ply_aim_training',     title:'Aim Training Program ($5K)',            desc:'Var −$5K, TSR +4.',                                 varCost:5000,  tsr:+4 },
+        { id:'ply_community_games',  title:'Community Games with Fans ($3K)',       desc:'Var −$3K, fans +500, morale +2.',                   varCost:3000,  fans:+500, morale:+2 },
+        { id:'ply_off_role_day',     title:'Off-Role Fun Day ($2K)',                desc:'Var −$2K, morale +4, TSR −1.',                      varCost:2000,  morale:+4, tsr:-1 },
+        { id:'ply_review_coach',     title:'1:1 Coaching Reviews ($7K)',            desc:'Var −$7K, TSR +3, morale +2.',                      varCost:7000,  tsr:+3,  morale:+2 },
+        { id:'ply_language_training',title:'Comms Language Training ($4K)',         desc:'Var −$4K, TSR +2, brand +0.01.',                    varCost:4000,  tsr:+2,  brandDelta:+0.01 },
+        { id:'ply_sleep_research',   title:'Sleep Schedule Optimization ($5K)',     desc:'Var −$5K, morale +4, TSR +1.',                      varCost:5000,  morale:+4, tsr:+1 },
+        { id:'ply_nutrition_workshop',title:'Nutrition Workshop ($4K)',             desc:'Var −$4K, morale +3.',                              varCost:4000,  morale:+3 },
+        { id:'ply_chill_day',        title:'Full Chill Day ($0)',                   desc:'Morale +5, TSR −2.',                               varCost:0,     morale:+5, tsr:-2 },
+        { id:'ply_no_comms',         title:'No-Comms Challenge ($0)',               desc:'Morale +2 (fun), TSR −1.',                         varCost:0,     morale:+2, tsr:-1 },
+        { id:'ply_peer_feedback',    title:'Structured Peer Feedback ($1K)',        desc:'Var −$1K, morale +2, TSR +1.',                      varCost:1000,  morale:+2, tsr:+1 },
+        { id:'ply_captain_workshop', title:'Captain Leadership Workshop ($3K)',     desc:'Var −$3K, morale +3.',                              varCost:3000,  morale:+3 },
+        { id:'ply_clutch_drills',    title:'Clutch Situation Drills ($2K)',         desc:'Var −$2K, TSR +3.',                                 varCost:2000,  tsr:+3 },
+        { id:'ply_tilt_management',  title:'Tilt Management Session ($3K)',         desc:'Var −$3K, morale +3.',                              varCost:3000,  morale:+3 },
+        { id:'ply_sports_day',       title:'Real Sports Day ($5K)',                 desc:'Var −$5K, morale +5, small TSR buff.',             varCost:5000,  morale:+5, tsr:+1 }
+      ]
+    };
 
-      cfg.columns.forEach((colCfg, idx) => {
+    function findCard(category, id) {
+      const deck = SEASON_DECKS[category] || [];
+      return deck.find(c => c.id === id) || null;
+    }
+
+    function pickRandomCards(deck, count) {
+      const indices = deck.map((_, i) => i);
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
+      return indices.slice(0, count).map(i => deck[i]);
+    }
+
+    // ---------- Rendering ----------
+    function renderStartupChoices() {
+      const cols = [col1, col2, col3];
+      STARTUP_CONFIG.columns.forEach((colCfg, idx) => {
         const fs = cols[idx];
         if (!fs) return;
         fs.innerHTML = '';
@@ -684,8 +723,65 @@
       $$('input[name=g1], input[name=g2], input[name=g3]').forEach(inp => {
         inp.addEventListener('change', previewEffects);
       });
-
       previewEffects();
+    }
+
+    function renderSeasonChoices() {
+      const opsCards = pickRandomCards(SEASON_DECKS.ops, 3);
+      const mktCards = pickRandomCards(SEASON_DECKS.mkt, 3);
+      const plyCards = pickRandomCards(SEASON_DECKS.ply, 3);
+
+      const groups = [
+        { legend: '1) Operations', name: 'g1', cards: opsCards },
+        { legend: '2) Marketing',  name: 'g2', cards: mktCards },
+        { legend: '3) Player Focus', name: 'g3', cards: plyCards }
+      ];
+      const cols = [col1, col2, col3];
+
+      groups.forEach((g, idx) => {
+        const fs = cols[idx];
+        if (!fs) return;
+        fs.innerHTML = '';
+        const legend = document.createElement('legend');
+        legend.textContent = g.legend;
+        fs.appendChild(legend);
+
+        g.cards.forEach(card => {
+          const label = document.createElement('label');
+          label.className = 'option';
+          const input = document.createElement('input');
+          input.type = 'radio';
+          input.name = g.name;
+          input.value = card.id;
+
+          const body = document.createElement('div');
+          const title = document.createElement('div');
+          title.className = 'opt-main';
+          title.textContent = card.title;
+          const helper = document.createElement('div');
+          helper.className = 'helper';
+          helper.textContent = card.desc;
+
+          body.appendChild(title);
+          body.appendChild(helper);
+          label.appendChild(input);
+          label.appendChild(body);
+          fs.appendChild(label);
+        });
+      });
+
+      $$('input[name=g1], input[name=g2], input[name=g3]').forEach(inp => {
+        inp.addEventListener('change', previewEffects);
+      });
+      previewEffects();
+    }
+
+    function renderDecisionsForPhase() {
+      if (S.phase === 'startup') {
+        renderStartupChoices();
+      } else if (S.phase === 'season') {
+        renderSeasonChoices();
+      }
     }
 
     function scenarioText() {
@@ -802,11 +898,10 @@
 
     function previewEffects() {
       const { d1, d2, d3 } = getSelections();
-      const hasAll = !!(d1 && d2 && d3);
-      elRun.disabled = !hasAll;
+      elRun.disabled = !(d1 && d2 && d3);
     }
 
-    // ---- Startup: now ONLY ONE TURN ----
+    // ---- Startup (single turn) ----
     function applyStartupTurn(sel) {
       const log = [];
       let upfrontCost = 0;
@@ -824,14 +919,14 @@
         S.morale += 5;
         S.tsr += 3;
         upfrontCost += 60000;
-        log.push('🏢 You leased a dedicated Facility: fixed +$10K/turn, morale & TSR up, higher startup cost.');
+        log.push('🏢 You leased a dedicated Facility: fixed +$10K/turn, morale and TSR up, higher startup cost.');
       } else if (sel.d1 === 'fac_house') {
         S.facilityLevel = 3;
         S.salaries += 18000;
         S.morale += 8;
         S.tsr += 5;
         upfrontCost += 100000;
-        log.push('🏠 You built a Gaming House: big fixed +$18K/turn, morale & TSR potential greatly increased.');
+        log.push('🏠 You built a Gaming House: big fixed +$18K/turn, morale and TSR potential greatly increased.');
       }
 
       // Equipment
@@ -857,7 +952,6 @@
       // Roster
       if (sel.d3 === 'ros_local') {
         S.salaries += 5000;
-        S.tsr += 0;
         S.morale += 5;
         upfrontCost += 10000;
         log.push('🎮 Local rookies signed: low salaries, high morale potential.');
@@ -874,7 +968,7 @@
         S.morale -= 2;
         S.fans += 2000;
         upfrontCost += 40000;
-        log.push('🌟 Star free agents: high salaries, TSR +10, +2,000 fans—but demanding egos.');
+        log.push('🌟 Star free agents: high salaries, TSR +10, +2,000 fans but morale is more fragile.');
       }
 
       S.cash -= upfrontCost;
@@ -890,21 +984,19 @@
         '─'.repeat(40)
       ]);
 
-      // Immediately move into Season phase
       S.phase = 'season';
       S.turn = 1;
-      S.startupStep = 1;
     }
 
-    // problem events (same as last version, trimmed for brevity)
-    function maybeTriggerProblemEvent(log, sel) {
+    // ---- Problem Events ----
+    function maybeTriggerProblemEvent(log, plyCard) {
       if (S.problemCooldown > 0) {
         S.problemCooldown -= 1;
         return;
       }
 
       let baseChance = 0.15;
-      if (sel && sel.d3 === 'ply_bootcamp') baseChance += 0.10;
+      if (plyCard && plyCard.bootcampRisk) baseChance += 0.10;
       if (S.facilityCondition < 70) baseChance += 0.05;
       if (S.equipmentLevel < 2) baseChance += 0.05;
       if (S.streak <= 0) baseChance += 0.05;
@@ -913,7 +1005,7 @@
       if (roll >= baseChance) return;
 
       const pool = [];
-      const injuryWeight = sel && sel.d3 === 'ply_bootcamp' ? 3 : 1;
+      const injuryWeight = plyCard && plyCard.bootcampRisk ? 3 : 1;
       for (let i = 0; i < injuryWeight; i++) pool.push('injury');
       const streamWeight = (S.equipmentLevel <= 1 || S.facilityCondition < 60) ? 3 : 1;
       for (let i = 0; i < streamWeight; i++) pool.push('stream');
@@ -930,10 +1022,10 @@
         S.morale -= 3;
         S.tsr = clamp(S.tsr, 0, 100);
         S.morale = clamp(S.morale, 0, 100);
-        const cause = sel && sel.d3 === 'ply_bootcamp'
-          ? 'After your intense bootcamp'
+        const cause = plyCard && plyCard.bootcampRisk
+          ? 'After your intense training block'
           : 'After a stretch of hard scrims';
-        log.push(`🚑 Problem Event: ${cause}, one player tweaks a wrist. TSR −4, Morale −3.`);
+        log.push(`🚑 Problem Event: ${cause}, one player tweaks a wrist. TSR −4, morale −3.`);
       } else if (type === 'stream') {
         const before = S.fans;
         S.fans = Math.max(0, Math.round(S.fans * 0.97));
@@ -955,7 +1047,9 @@
       S.problemCooldown = 2;
     }
 
-    function applySeasonTurn(sel) {
+    // ---- Season Turn ----
+    function applySeasonTurn(cards) {
+      const { ops, mkt, ply } = cards;
       const log = [];
 
       S.undoStack.push(JSON.stringify(S));
@@ -971,59 +1065,32 @@
       log.push(minis[Math.floor(Math.random() * minis.length)]());
 
       let variable = 0;
-
-      // Operations
-      if (sel.d1 === 'ops_analyst') {
-        variable += 20000;
-        S.tsr += 5;
-        S.salaries += 5000;
-        log.push('⚙️ Operations: Analyst hired (Var −$20K; Fixed +$5K/turn; TSR +5).');
-      } else if (sel.d1 === 'ops_house') {
-        variable += 40000;
-        S.morale += 10;
-        S.fans += 500;
-        log.push('🏠 Operations: Team house upgrades (Var −$40K; Morale +10; Fans +500).');
-      } else if (sel.d1 === 'ops_lean') {
-        S.tsr -= 2;
-        log.push('🧮 Operations: Stayed lean (no spend; TSR −2 over time).');
-      }
-
-      // Marketing
       let newlyQueuedMerch = 0;
-      if (sel.d2 === 'mkt_merch') {
-        variable += 25000;
-        S.fans += 1000;
-        newlyQueuedMerch += 10000;
-        log.push('🛍️ Marketing: Merch drop (Var −$25K; +1K fans; +$10K merch queued for next turn).');
-      } else if (sel.d2 === 'mkt_local') {
-        variable += 30000;
-        S.fans += 2000;
-        S.morale += 5;
-        log.push('🎪 Marketing: Local event (Var −$30K; +2K fans; Morale +5).');
-      } else if (sel.d2 === 'mkt_minimal') {
-        log.push('📣 Marketing: Minimal social presence (no spend; slow organic growth).');
+
+      function applyCard(card, label) {
+        if (!card) return;
+        if (card.varCost) { variable += card.varCost; }
+        if (card.fixedDelta) { S.salaries += card.fixedDelta; }
+        if (card.tsr) { S.tsr += card.tsr; }
+        if (card.morale) { S.morale += card.morale; }
+        if (card.fans) { S.fans += card.fans; }
+        if (card.brandDelta) { S.brandReputation += card.brandDelta; }
+        if (card.facilityCond) { S.facilityCondition += card.facilityCond; }
+        if (card.merchNext) { newlyQueuedMerch += card.merchNext; }
+
+        const costPart = card.varCost ? `Var ${card.varCost > 0 ? '−' : '+'}${fmtMoney(Math.abs(card.varCost))}; ` : '';
+        const fixedPart = card.fixedDelta ? `Fixed ${card.fixedDelta > 0 ? '+' : '−'}${fmtMoney(Math.abs(card.fixedDelta))}/turn; ` : '';
+        log.push(`${label}: ${card.title} (${costPart}${fixedPart}effects applied).`);
       }
 
-      // Player Focus
-      if (sel.d3 === 'ply_bootcamp') {
-        S.tsr += 8;
-        S.morale -= 10;
-        log.push('💪 Focus: Bootcamp (TSR +8; Morale −10).');
-      } else if (sel.d3 === 'ply_retreat') {
-        variable += 10000;
-        S.morale += 10;
-        S.tsr -= 3;
-        log.push('🌲 Focus: Retreat (Var −$10K; Morale +10; TSR −3).');
-      } else if (sel.d3 === 'ply_balanced') {
-        S.tsr += 2;
-        S.morale += 2;
-        log.push('⚖️ Focus: Balanced schedule (TSR +2; Morale +2).');
-      }
+      applyCard(ops, '⚙️ Operations');
+      applyCard(mkt, '📣 Marketing');
+      applyCard(ply, '🎯 Player Focus');
 
       S.tsr = clamp(Math.round(S.tsr), 0, 100);
       S.morale = clamp(Math.round(S.morale), 0, 100);
 
-      maybeTriggerProblemEvent(log, sel);
+      maybeTriggerProblemEvent(log, ply);
 
       const moraleMult = clamp(S.morale / 100, 0.3, 1.2);
       const equipMult = 1 + (S.equipmentLevel * 0.05);
@@ -1040,13 +1107,13 @@
         S.streak = (S.streak || 0) + 1;
         S.fans += 1500;
         confetti(20);
-        log.push(`🏆 MATCH RESULT: WIN (p=${(pWin*100).toFixed(1)}%). Prize ${fmtMoney(prizeMoney)}, Fans +1,500.`);
+        log.push(`🏆 MATCH RESULT: WIN (p=${(pWin*100).toFixed(1)}%). Prize ${fmtMoney(prizeMoney)}, fans +1,500.`);
       } else {
         S.streak = 0;
         variable += 10000;
         const before = S.fans;
         S.fans = Math.max(0, Math.round(S.fans * 0.95));
-        log.push(`💔 MATCH RESULT: LOSS (p=${(pWin*100).toFixed(1)}%). Sponsor penalty −$10,000; Fans ${before.toLocaleString()} → ${S.fans.toLocaleString()} (−5%).`);
+        log.push(`💔 MATCH RESULT: LOSS (p=${(pWin*100).toFixed(1)}%). Sponsor penalty −$10,000; fans ${before.toLocaleString()} → ${S.fans.toLocaleString()} (−5%).`);
       }
 
       const prevQueuedMerch = S.merchNext || 0;
@@ -1088,7 +1155,7 @@
       else if (S.rank === 2 && S.tsr >= 80 && S.fans >= 12000) { S.rank = 1; promoted = true; }
       if (promoted) {
         S.sponsorshipTier = Math.min(4, S.sponsorshipTier + 1);
-        log.push('🚀 Rank update: You were promoted! Sponsorship tier improved.');
+        log.push('🚀 Rank update: You were promoted. Sponsorship tier improved.');
       }
 
       const fb = academicFeedback(pl, { revenue, expenses, fixed, variable });
@@ -1219,7 +1286,7 @@
       if (S.mastered) {
         note += ' You also achieved Mastery by reaching Tier 1 with strong finances, fans, TSR, and morale.';
       }
-      const assessment = `${a}, ${b}, and ${c}. Consider how fixed vs variable costs and debt shaped your break-even point and liquidity over time.${note}`;
+      const assessment = `${a}, ${b}, and ${c}. Consider how fixed versus variable costs and debt shaped your break-even point and liquidity over time.${note}`;
 
       lines.push('Final Assessment:');
       lines.push(assessment);
@@ -1261,7 +1328,7 @@
       save();
     }
 
-    // ---- Events ----
+    // ---- Events & wiring ----
     elName?.addEventListener('input', setNameFromInput);
 
     elReset?.addEventListener('click', () => {
@@ -1280,9 +1347,7 @@
 
     elStart?.addEventListener('click', () => {
       setNameFromInput();
-      S.phase = 'startup';
-      S.turn = 1;
-      S.startupStep = 1;
+      S = { ...START, name: S.name };
       elIntro.style.display = 'none';
       elFinal.style.display = 'none';
       elGame.style.display = 'block';
@@ -1307,7 +1372,10 @@
       if (S.phase === 'startup') {
         applyStartupTurn(sel);
       } else if (S.phase === 'season') {
-        applySeasonTurn(sel);
+        const opsCard = findCard('ops', sel.d1);
+        const mktCard = findCard('mkt', sel.d2);
+        const plyCard = findCard('ply', sel.d3);
+        applySeasonTurn({ ops: opsCard, mkt: mktCard, ply: plyCard });
       }
 
       $$('input[name=g1], input[name=g2], input[name=g3]').forEach(inp => inp.checked = false);
@@ -1401,17 +1469,15 @@
 
     (function smokeTests() {
       try {
-        console.groupCollapsed('Esports Sim v2 Smoke Tests');
-        console.assert(typeof winProbability() === 'number', 'winProbability returns a number');
+        console.groupCollapsed('Esports Sim v2.3 Smoke Tests');
+        console.assert(typeof winProbability() === 'number','winProbability returns number');
         const p = winProbability();
-        console.assert(p >= 0.05 && p <= 0.95, 'winProbability clamped between 5% and 95%');
-        const plTest = (1000 - (300 + 200));
-        console.assert(plTest === 500, 'P/L arithmetic sanity (1000 - 300 - 200 = 500)');
-        console.assert(!!document.getElementById('btnPDF'), 'btnPDF exists');
-        console.assert(!!document.getElementById('btnContinueExtended'), 'btnContinueExtended exists');
+        console.assert(p >= 0.05 && p <= 0.95,'winProbability clamped [0.05,0.95]');
+        console.assert(!!document.getElementById('btnPDF'),'btnPDF exists');
+        console.assert(!!document.getElementById('btnContinueExtended'),'btnContinueExtended exists');
         console.groupEnd();
-      } catch (err) {
-        console.warn('Smoke tests failed', err);
+      } catch(err){
+        console.warn('Smoke tests failed',err);
       }
     })();
   });
