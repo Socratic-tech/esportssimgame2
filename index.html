@@ -605,7 +605,15 @@
       endedReason: null
     };
 
-    let S = load() || { ...START };
+    const loaded = load();
+let S = loaded ? { ...START, ...loaded } : { ...START };
+
+// Safety backfills in case older saves are missing fields
+if (!Array.isArray(S.history)) S.history = [];
+if (!Array.isArray(S.undoStack)) S.undoStack = [];
+if (typeof S.merchNext !== 'number') S.merchNext = 0;
+if (typeof S.problemCooldown !== 'number') S.problemCooldown = 0;
+if (typeof S.brandReputation !== 'number') S.brandReputation = 1.0;
 
     function updateWelcomeTitle(){
       const student = (S.name && S.name.trim()) ? S.name.trim() : 'Manager X';
