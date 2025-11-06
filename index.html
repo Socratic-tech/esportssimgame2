@@ -23,6 +23,8 @@
       color:var(--text);
       font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
       line-height:1.55;
+      opacity:0;
+      animation:pageFadeIn .6s ease-out forwards;
     }
     header{
       background:#050815d9;
@@ -80,8 +82,13 @@
       display:inline-flex;
       align-items:center;
       gap:6px;
+      transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
     }
-    .btn:hover{filter:brightness(1.07)}
+    .btn:hover{
+      filter:brightness(1.07);
+      transform:translateY(-1px);
+      box-shadow:0 6px 18px rgba(0,0,0,.35);
+    }
     .btn.good{background:#166534;border-color:#16a34a;}
     .btn.bad{background:#7f1d1d;border-color:#b91c1c;}
     .btn.ghost{background:transparent;border-color:var(--line);color:var(--muted);}
@@ -93,6 +100,13 @@
       border-radius:16px;
       padding:14px;
       box-shadow:0 18px 45px rgba(0,0,0,0.5);
+      transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
+    }
+    .card:hover{
+      transform:translateY(-2px);
+      box-shadow:0 22px 55px rgba(0,0,0,0.6);
+      border-color:#3348a5;
+      background:rgba(11,16,40,0.96);
     }
     .status{
       grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
@@ -118,6 +132,7 @@
       padding:12px;
       border:1px solid #232f61;
       margin-top:8px;
+      transition:background .2s ease, border-color .2s ease, transform .2s ease;
     }
     .pill{
       display:inline-flex;
@@ -142,6 +157,9 @@
       height:100%;
       background:linear-gradient(90deg,#ef4444,#f59e0b,#10b981);
       transition:width .25s ease-out;
+    }
+    .meter > i.pulse{
+      animation:pulseGlow .6s ease-out;
     }
     .choices{
       display:grid;
@@ -170,8 +188,13 @@
       border:1px solid transparent;
       cursor:pointer;
       margin-bottom:2px;
+      transition:background .15s ease, border-color .15s ease, transform .15s ease;
     }
-    .option:hover{border-color:#28408e;background:rgba(24,38,94,0.4);}
+    .option:hover{
+      border-color:#28408e;
+      background:rgba(24,38,94,0.4);
+      transform:translateY(-1px);
+    }
     .option input{margin-top:3px;}
     .opt-main{font-size:13px;font-weight:600;}
     .helper{font-size:11px;color:#cbd5ff;}
@@ -213,7 +236,10 @@
       border:1px solid var(--line);
     }
     .badge-mode.standard{color:var(--warn);}
-    .badge-mode.extended{color:var(--good);}
+    .badge-mode.extended{
+      color:var(--good);
+      animation:badgePulse 1.6s ease-in-out infinite;
+    }
     #finalScreen{margin-top:16px;}
     #standardPrompt{
       display:none;
@@ -232,12 +258,34 @@
       padding:18px;
       max-width:420px;
       width:90%;
+      transform:translateY(8px);
+      opacity:0;
+      animation:modalIn .25s ease-out forwards;
     }
-    @keyframes fall{to{transform:translateY(100vh) rotate(720deg);opacity:.1}}
+    @keyframes fall{
+      to{transform:translateY(100vh) rotate(720deg);opacity:.1}
+    }
+    @keyframes pageFadeIn{
+      from{opacity:0;transform:translateY(4px);}
+      to{opacity:1;transform:translateY(0);}
+    }
+    @keyframes pulseGlow{
+      0%{box-shadow:0 0 0 0 rgba(106,168,255,0.8);}
+      100%{box-shadow:0 0 0 14px rgba(106,168,255,0);}
+    }
+    @keyframes badgePulse{
+      0%{box-shadow:0 0 0 0 rgba(16,185,129,0.7);}
+      70%{box-shadow:0 0 0 10px rgba(16,185,129,0);}
+      100%{box-shadow:0 0 0 0 rgba(16,185,129,0);}
+    }
+    @keyframes modalIn{
+      from{opacity:0;transform:translateY(10px);}
+      to{opacity:1;transform:translateY(0);}
+    }
     @media (max-width:640px){.choices{grid-template-columns:1fr}}
     @media print{
       header,.footerbar,#intro .actions,#game .actions,#standardPrompt{display:none !important}
-      body{background:#fff;color:#000;}
+      body{background:#fff;color:#000;animation:none;transform:none;}
       .card,.log{background:#fff;border-color:#000;box-shadow:none;}
     }
   </style>
@@ -250,7 +298,7 @@
       <div class="row">
         <label class="muted" for="studentName" style="font-size:12px;">Student Name</label>
         <input id="studentName" type="text" placeholder="Enter your name" />
-        <button class="btn ghost small" id="btnReset">Reset</button>
+        <button type="button" class="btn ghost small" id="btnReset">Reset</button>
       </div>
     </div>
   </header>
@@ -258,7 +306,7 @@
   <main class="wrap-main">
     <!-- Intro / Instructions -->
     <section id="intro" class="card">
-      <h2 style="margin-top:0;">Welcome, Manager X</h2>
+      <h2 id="welcomeTitle" style="margin-top:0;">Welcome, Manager X</h2>
       <p class="muted">
         You are the founder of a brand-new esports organization. You have just qualified into <b>Tier 3 (Rookie)</b>
         and secured <b>$250,000</b> to launch your team. Your job is to make strategic choices about
@@ -284,7 +332,7 @@
         <li><b>Game Over:</b> two turns in a row with negative cash (Financial Ruin) or morale reaching zero (Mutiny).</li>
       </ul>
       <div class="actions" style="margin-top:10px;">
-        <button class="btn" id="btnStart">Start Simulation</button>
+        <button type="button" class="btn" id="btnStart">Start Simulation</button>
       </div>
     </section>
 
@@ -355,10 +403,10 @@
       </div>
 
       <div class="actions" style="margin-top:12px;">
-        <button class="btn" id="btnRun" disabled>Confirm Decisions & Run Turn</button>
-        <button class="btn ghost" id="btnRandom" title="Quick pick one option per column">Quick Pick</button>
-        <button class="btn ghost" id="btnUndo" disabled>Undo Last Turn</button>
-        <button class="btn ghost" id="btnEndEarly">End & Score Now</button>
+        <button type="button" class="btn" id="btnRun" disabled>Confirm Decisions & Run Turn</button>
+        <button type="button" class="btn ghost" id="btnRandom" title="Quick pick one option per column">Quick Pick</button>
+        <button type="button" class="btn ghost" id="btnUndo" disabled>Undo Last Turn</button>
+        <button type="button" class="btn ghost" id="btnEndEarly">End & Score Now</button>
       </div>
 
       <div class="grid" style="grid-template-columns:1.1fr .9fr;gap:12px;margin-top:12px;">
@@ -367,79 +415,77 @@
           <div id="finance" class="muted"></div>
           <p class="muted" id="feedback" style="margin-top:8px;font-style:italic;"></p>
         </div>
-        <div class="log" id="log"></div>
+        <div class="log" id="log" aria-live="polite"></div>
       </div>
     </section>
 
     <!-- Final Scoring -->
     <section id="finalScreen" class="card" style="display:none;">
-    <section id="finalScreen" class="card" style="display:none;">
-  <h2 style="margin-top:0;">Final Scoring Screen</h2>
-  <pre id="finalText" class="muted" style="white-space:pre-wrap;"></pre>
+      <h2 style="margin-top:0;">Final Scoring Screen</h2>
+      <pre id="finalText" class="muted" style="white-space:pre-wrap;"></pre>
 
-  <!-- Visual analytics panel -->
-  <div id="analyticsPanel" style="margin-top:12px;">
-    <h3 style="margin:0 0 6px 0;">Visual Breakdown</h3>
+      <!-- Visual analytics panel -->
+      <div id="analyticsPanel" style="margin-top:12px;">
+        <h3 style="margin:0 0 6px 0;">Visual Breakdown</h3>
 
-    <div class="grid" style="grid-template-columns:1.2fr 1fr;gap:12px;">
-      <div class="card">
-        <h4 style="margin-top:0;">Cash Flow Over Time vs Average</h4>
-        <canvas id="cashChart" height="140"></canvas>
+        <div class="grid" style="grid-template-columns:1.2fr 1fr;gap:12px;">
+          <div class="card">
+            <h4 style="margin-top:0;">Cash Flow Over Time vs Average</h4>
+            <canvas id="cashChart" height="140"></canvas>
+          </div>
+          <div class="card">
+            <h4 style="margin-top:0;">TSR Progression vs Average</h4>
+            <canvas id="tsrChart" height="140"></canvas>
+          </div>
+        </div>
+
+        <div class="grid" style="grid-template-columns:1.2fr 1fr;gap:12px;margin-top:12px;">
+          <div class="card">
+            <h4 style="margin-top:0;">Key Decision Moments</h4>
+            <ul id="keyMomentsList" class="muted" style="font-size:12px;padding-left:18px;margin:6px 0;"></ul>
+          </div>
+          <div class="card">
+            <h4 style="margin-top:0;">“What if?” Scenarios</h4>
+            <ul id="whatIfList" class="muted" style="font-size:12px;padding-left:18px;margin:6px 0;"></ul>
+          </div>
+        </div>
       </div>
-      <div class="card">
-        <h4 style="margin-top:0;">TSR Progression vs Average</h4>
-        <canvas id="tsrChart" height="140"></canvas>
-      </div>
-    </div>
 
-    <div class="grid" style="grid-template-columns:1.2fr 1fr;gap:12px;margin-top:12px;">
-      <div class="card">
-        <h4 style="margin-top:0;">Key Decision Moments</h4>
-        <ul id="keyMomentsList" class="muted" style="font-size:12px;padding-left:18px;margin:6px 0;"></ul>
+      <div class="actions" style="margin-top:10px;">
+        <button type="button" class="btn good" id="btnPDF">Save Final Report (PDF)</button>
+        <button type="button" class="btn" id="btnContinueExtended">Continue in Extended Mode</button>
       </div>
-      <div class="card">
-        <h4 style="margin-top:0;">“What if?” Scenarios</h4>
-        <ul id="whatIfList" class="muted" style="font-size:12px;padding-left:18px;margin:6px 0;"></ul>
-      </div>
-    </div>
-  </div>
-
-  <div class="actions" style="margin-top:10px;">
-    <button class="btn good" id="btnPDF">Save Final Report (PDF)</button>
-    <button class="btn" id="btnContinueExtended">Continue in Extended Mode</button>
-  </div>
-</section>
-
+    </section>
 
     <!-- Standard Session Prompt -->
-    <div id="standardPrompt">
+    <div id="standardPrompt" role="dialog" aria-modal="true" aria-labelledby="standardPromptTitle">
       <div class="modal">
-        <h3 style="margin-top:0;">Standard Session Complete</h3>
+        <h3 id="standardPromptTitle" style="margin-top:0;">Standard Session Complete</h3>
         <p class="muted">
           You have reached the end of the <b>Standard Play</b> window (designed for about 30 minutes).
           You can end now and receive your Final Score, or switch into <b>Extended Mode</b> and keep managing your org.
         </p>
         <div class="actions" style="margin-top:10px;">
-          <button class="btn good" id="btnEndStandard">End Now & Score</button>
-          <button class="btn" id="btnGoExtended">Continue in Extended Mode</button>
-          <button class="btn ghost" id="btnCancelPrompt">Cancel</button>
+          <button type="button" class="btn good" id="btnEndStandard">End Now & Score</button>
+          <button type="button" class="btn" id="btnGoExtended">Continue in Extended Mode</button>
+          <button type="button" class="btn ghost" id="btnCancelPrompt">Cancel</button>
         </div>
       </div>
     </div>
 
   </main>
 
-  <div class="footerbar">
+  <footer class="footerbar">
     <div class="footer-wrap">
       <span class="muted">
         Make one choice per column each turn. Wins earn prize money and fans; losses apply a sponsor penalty and fan drop.
       </span>
       <div class="row">
         <span id="modeBadge" class="badge-mode standard">Standard Mode</span>
-        <button class="btn ghost small" id="btnPrint">Print Page</button>
+        <button type="button" class="btn ghost small" id="btnPrint">Print Page</button>
       </div>
     </div>
-  </div>
+  </footer>
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
@@ -473,6 +519,7 @@
     const btnEndStandard = $('#btnEndStandard');
     const btnGoExtended = $('#btnGoExtended');
     const btnCancelPrompt = $('#btnCancelPrompt');
+    const welcomeTitle = $('#welcomeTitle');
      
     // Analytics DOM
     const cashChartCanvas = $('#cashChart');
@@ -511,6 +558,23 @@
       try { return JSON.parse(localStorage.getItem('mgrx_v2_autosave') || 'null'); } catch { return null; }
     };
 
+    // Simple animated show/hide helpers
+    function showSection(el){
+      if(!el) return;
+      el.style.display = 'block';
+      el.style.opacity = 0;
+      el.style.transform = 'translateY(6px)';
+      el.style.transition = 'opacity .25s ease-out, transform .25s ease-out';
+      requestAnimationFrame(() => {
+        el.style.opacity = 1;
+        el.style.transform = 'translateY(0)';
+      });
+    }
+    function hideSection(el){
+      if(!el) return;
+      el.style.display = 'none';
+    }
+
     const START = {
       turn: 1,
       season: 1,
@@ -542,6 +606,13 @@
     };
 
     let S = load() || { ...START };
+
+    function updateWelcomeTitle(){
+      const student = (S.name && S.name.trim()) ? S.name.trim() : 'Manager X';
+      if (welcomeTitle){
+        welcomeTitle.textContent = `Welcome, ${student}`;
+      }
+    }
 
     // ---------- STARTUP CONFIG ----------
     const STARTUP_CONFIG = {
@@ -612,105 +683,111 @@
       ]
     };
 
-    // ---------- SEASON DECKS (30 cards per category) ----------
-    const SEASON_DECKS = {
-      ops: [
-        { id:'ops_analyst',          title:'Hire Analyst ($20K)',                    desc:'Var −$20K, fixed +$5K/turn, TSR +5.',              varCost:20000, fixedDelta:5000, tsr:+5 },
-        { id:'ops_assistant',        title:'Hire Team Manager ($15K)',              desc:'Var −$15K, fixed +$4K/turn, morale +4.',          varCost:15000, fixedDelta:4000, morale:+4 },
-        { id:'ops_data',             title:'Invest in Data Tools ($10K)',           desc:'Var −$10K, TSR +3, brand rep +0.03.',            varCost:10000, tsr:+3, brandDelta:+0.03 },
-        { id:'ops_gym',              title:'Add Gym Memberships ($8K)',             desc:'Var −$8K, morale +5.',                            varCost:8000,  morale:+5 },
-        { id:'ops_diet',             title:'Sports Nutrition Program ($12K)',       desc:'Var −$12K, TSR +2, morale +2.',                   varCost:12000, tsr:+2, morale:+2 },
-        { id:'ops_house_upgrade',    title:'Facility Deep Clean & Repair ($18K)',   desc:'Var −$18K, facility condition +10, morale +3.',  varCost:18000, facilityCond:+10, morale:+3 },
-        { id:'ops_travel_upgrade',   title:'Upgrade Travel Comfort ($10K)',         desc:'Var −$10K, morale +3, TSR +1.',                   varCost:10000, morale:+3, tsr:+1 },
-        { id:'ops_cut_staff',        title:'Cut Support Staff ($0)',                desc:'Fixed −$5K/turn, morale −5.',                     varCost:0,     fixedDelta:-5000, morale:-5 },
-        { id:'ops_stream_room',      title:'Build Stream Studio ($25K)',            desc:'Var −$25K, fans +800, brand +0.05.',             varCost:25000, fans:+800, brandDelta:+0.05 },
-        { id:'ops_sleep',            title:'Sleep & Wellness Program ($12K)',       desc:'Var −$12K, morale +6, TSR +1.',                  varCost:12000, morale:+6, tsr:+1 },
-        { id:'ops_interns',          title:'Bring in Interns ($5K)',                desc:'Var −$5K, fixed +$1K, morale +1, fans +100.',    varCost:5000,  fixedDelta:1000, morale:+1, fans:+100 },
-        { id:'ops_rent_negotiate',   title:'Negotiate Rent ($0)',                   desc:'Fixed −$3K/turn, brand rep −0.02.',              varCost:0,     fixedDelta:-3000, brandDelta:-0.02 },
-        { id:'ops_hr_policy',        title:'Formal HR Policies ($6K)',              desc:'Var −$6K, morale +3 over time.',                  varCost:6000,  morale:+3 },
-        { id:'ops_security',         title:'Upgrade Security ($9K)',                desc:'Var −$9K, protects equipment; small brand boost.',varCost:9000,  brandDelta:+0.02 },
-        { id:'ops_it_upgrade',       title:'IT Infrastructure Upgrade ($14K)',      desc:'Var −$14K, fewer tech issues, TSR +2.',          varCost:14000, tsr:+2 },
-        { id:'ops_backup_power',     title:'Backup Power System ($11K)',            desc:'Var −$11K, reduces chance of problem events.',    varCost:11000, facilityCond:+5 },
-        { id:'ops_head_coach',       title:'Hire Head Coach ($22K)',                desc:'Var −$22K, fixed +$8K/turn, TSR +6.',            varCost:22000, fixedDelta:8000, tsr:+6 },
-        { id:'ops_scrim_partner',    title:'Exclusive Scrim Partners ($13K)',       desc:'Var −$13K, TSR +4.',                             varCost:13000, tsr:+4 },
-        { id:'ops_transport_contract',title:'Travel Contract ($0)',                 desc:'Fixed +$2K/turn, reduces variable travel risk.',  varCost:0,     fixedDelta:2000 },
-        { id:'ops_cleaning_service', title:'Pro Cleaning Service ($7K)',            desc:'Var −$7K, facility condition +8, morale +2.',    varCost:7000,  facilityCond:+8, morale:+2 },
-        { id:'ops_healthcare',       title:'Player Healthcare Plan ($15K)',         desc:'Var −$15K, morale +5.',                           varCost:15000, morale:+5 },
-        { id:'ops_video_review_room',title:'Video Review Room ($16K)',              desc:'Var −$16K, TSR +4.',                             varCost:16000, tsr:+4 },
-        { id:'ops_qa_team',          title:'Quality Assurance Staff ($10K)',        desc:'Var −$10K, brand +0.03.',                        varCost:10000, brandDelta:+0.03 },
-        { id:'ops_insurance',        title:'Comprehensive Insurance ($9K)',         desc:'Var −$9K, protects vs big losses.',              varCost:9000 },
-        { id:'ops_benchmark_trip',   title:'Benchmark Visit to Pro Org ($18K)',     desc:'Var −$18K, TSR +3, brand +0.03.',                varCost:18000, tsr:+3, brandDelta:+0.03 },
-        { id:'ops_staff_retreat',    title:'Staff-Only Retreat ($12K)',             desc:'Var −$12K, morale +4.',                          varCost:12000, morale:+4 },
-        { id:'ops_automation',       title:'Workflow Automation Software ($15K)',   desc:'Var −$15K, fixed −$3K/turn, morale +1.',         varCost:15000, fixedDelta:-3000, morale:+1 },
-        { id:'ops_legal_consult',    title:'Legal Consultation ($8K)',              desc:'Var −$8K, protects brand in long run.',          varCost:8000 },
-        { id:'ops_accounting',       title:'Hire Accounting Firm ($10K)',           desc:'Var −$10K, better cost control; small fixed cut.',varCost:10000, fixedDelta:-2000 },
-        { id:'ops_green_initiative', title:'Green Facility Initiative ($9K)',       desc:'Var −$9K, brand +0.04, morale +1.',              varCost:9000,  brandDelta:+0.04, morale:+1 }
-      ],
-      mkt: [
-        { id:'mkt_merch',            title:'Launch Merch ($25K)',                   desc:'Var −$25K, +1K fans, +$10K merch next turn.',       varCost:25000, fans:+1000, merchNext:10000 },
-        { id:'mkt_local',            title:'Host Local Event ($30K)',               desc:'Var −$30K, +2K fans, morale +5.',                   varCost:30000, fans:+2000, morale:+5 },
-        { id:'mkt_minimal',          title:'Minimal Social ($0)',                   desc:'No spend, no immediate change.',                    varCost:0 },
-        { id:'mkt_stream',           title:'Weekly Stream Schedule ($8K)',          desc:'Var −$8K, fans +600, brand +0.04.',                 varCost:8000,  fans:+600, brandDelta:+0.04 },
-        { id:'mkt_college',          title:'Campus Activation ($15K)',              desc:'Var −$15K, fans +1200, brand +0.03.',               varCost:15000, fans:+1200, brandDelta:+0.03 },
-        { id:'mkt_collab',           title:'Collab with Influencer ($20K)',         desc:'Var −$20K, fans +1500, merch next +$5K.',           varCost:20000, fans:+1500, merchNext:5000 },
-        { id:'mkt_docu',             title:'Mini-Doc Series ($18K)',                desc:'Var −$18K, fans +900, morale +3.',                  varCost:18000, fans:+900, morale:+3 },
-        { id:'mkt_vip',              title:'VIP Fan Discord ($5K)',                 desc:'Var −$5K, fans +400, brand +0.02.',                 varCost:5000,  fans:+400, brandDelta:+0.02 },
-        { id:'mkt_cheap_ads',        title:'Cheap Online Ads ($6K)',                desc:'Var −$6K, fans +500.',                              varCost:6000,  fans:+500 },
-        { id:'mkt_charity',          title:'Charity Showmatch ($10K)',              desc:'Var −$10K, fans +800, brand +0.05.',                varCost:10000, fans:+800, brandDelta:+0.05 },
-        { id:'mkt_meet_greet',       title:'In-Person Meet & Greet ($12K)',         desc:'Var −$12K, fans +700, morale +2.',                  varCost:12000, fans:+700, morale:+2 },
-        { id:'mkt_premium_brand',    title:'Premium Brand Campaign ($25K)',         desc:'Var −$25K, brand +0.08, fans +900.',                varCost:25000, brandDelta:+0.08, fans:+900 },
-        { id:'mkt_tiktok_challenge', title:'TikTok Challenge ($7K)',                desc:'Var −$7K, fans +900, brand +0.03.',                 varCost:7000,  fans:+900, brandDelta:+0.03 },
-        { id:'mkt_club_partners',    title:'Partner with College Esports Clubs ($9K)',desc:'Var −$9K, fans +1000, brand +0.03.',             varCost:9000,  fans:+1000, brandDelta:+0.03 },
-        { id:'mkt_newsletter',       title:'Launch Email Newsletter ($4K)',         desc:'Var −$4K, fans +300, better retention.',            varCost:4000,  fans:+300 },
-        { id:'mkt_highlight_reel',   title:'Weekly Highlight Reels ($6K)',          desc:'Var −$6K, fans +600, brand +0.02.',                 varCost:6000,  fans:+600, brandDelta:+0.02 },
-        { id:'mkt_memes',            title:'Meme Marketing Push ($3K)',             desc:'Var −$3K, fans +400, low risk.',                    varCost:3000,  fans:+400 },
-        { id:'mkt_roadshow',         title:'Regional Roadshow ($20K)',              desc:'Var −$20K, fans +1600, brand +0.04.',               varCost:20000, fans:+1600, brandDelta:+0.04 },
-        { id:'mkt_sponsor_showcase', title:'Sponsor Showcase Stream ($5K)',         desc:'Var −$5K, brand +0.05, small fans boost.',          varCost:5000,  brandDelta:+0.05, fans:+300 },
-        { id:'mkt_viewing_party',    title:'Offline Viewing Party ($11K)',          desc:'Var −$11K, fans +900, morale +2.',                  varCost:11000, fans:+900, morale:+2 },
-        { id:'mkt_podcast',          title:'Team Podcast Launch ($9K)',             desc:'Var −$9K, fans +700, brand +0.03.',                 varCost:9000,  fans:+700, brandDelta:+0.03 },
-        { id:'mkt_cross_promo',      title:'Cross-Promote with Other Org ($10K)',   desc:'Var −$10K, fans +1000.',                            varCost:10000, fans:+1000 },
-        { id:'mkt_coach_clinic',     title:'Coach-Led Clinic ($8K)',                desc:'Var −$8K, fans +500, brand +0.02.',                 varCost:8000,  fans:+500, brandDelta:+0.02 },
-        { id:'mkt_student_discount', title:'Student Discount Program ($6K)',        desc:'Var −$6K, fans +600 (college age).',                varCost:6000,  fans:+600 },
-        { id:'mkt_loyalty_program',  title:'Fan Loyalty Program ($7K)',             desc:'Var −$7K, fans +500; retention boost.',             varCost:7000,  fans:+500 },
-        { id:'mkt_merch_collab',     title:'Merch Collab with Artist ($18K)',       desc:'Var −$18K, fans +1200, merch next +$8K.',           varCost:18000, fans:+1200, merchNext:8000 },
-        { id:'mkt_giveaway',         title:'Social Media Giveaway ($5K)',           desc:'Var −$5K, fans +700.',                              varCost:5000,  fans:+700 },
-        { id:'mkt_ingame_ads',       title:'In-Game Ad Partnership ($14K)',         desc:'Var −$14K, brand +0.06, fans +800.',                varCost:14000, brandDelta:+0.06, fans:+800 },
-        { id:'mkt_fan_survey',       title:'Fan Survey & Feedback ($4K)',           desc:'Var −$4K, morale +1, brand +0.02.',                 varCost:4000,  morale:+1, brandDelta:+0.02 },
-        { id:'mkt_ugc_campaign',     title:'User-Generated Content Campaign ($6K)', desc:'Var −$6K, fans +600.',                              varCost:6000,  fans:+600 }
-      ],
-      ply: [
-        { id:'ply_bootcamp',         title:'Intense Bootcamp ($0)',                 desc:'TSR +8; morale −10; higher injury risk.',            varCost:0,     tsr:+8,  morale:-10, bootcampRisk:true },
-        { id:'ply_retreat',          title:'Team Retreat ($10K)',                   desc:'Var −$10K, morale +10, TSR −3.',                    varCost:10000, morale:+10, tsr:-3 },
-        { id:'ply_balanced',         title:'Balanced Schedule ($0)',                desc:'TSR +2, morale +2.',                                varCost:0,     tsr:+2,  morale:+2 },
-        { id:'ply_vod',              title:'VOD Review Focus ($0)',                 desc:'TSR +4, morale −2.',                                varCost:0,     tsr:+4,  morale:-2 },
-        { id:'ply_content_day',      title:'Content Day ($3K)',                     desc:'Var −$3K, fans +600, morale +1, TSR −1.',          varCost:3000,  fans:+600, morale:+1, tsr:-1 },
-        { id:'ply_mental_coach',     title:'Mental Performance Coach ($12K)',       desc:'Var −$12K, morale +7.',                             varCost:12000, morale:+7 },
-        { id:'ply_substitute',       title:'Trial Substitute Player ($5K)',         desc:'Var −$5K, TSR +3 short term.',                      varCost:5000,  tsr:+3 },
-        { id:'ply_stream_focus',     title:'Stream-First Week ($0)',                desc:'Fans +700, TSR −2.',                                varCost:0,     fans:+700, tsr:-2 },
-        { id:'ply_role_swap',        title:'Experiment Role Swap ($0)',             desc:'TSR +5 if it lands; morale −3.',                    varCost:0,     tsr:+5,  morale:-3 },
-        { id:'ply_health_week',      title:'Health Reset Week ($4K)',               desc:'Var −$4K, morale +6.',                              varCost:4000,  morale:+6 },
-        { id:'ply_solo_queue',       title:'Solo Queue Grind ($0)',                 desc:'TSR +3, morale −1.',                                varCost:0,     tsr:+3,  morale:-1 },
-        { id:'ply_media_training',   title:'Media Training ($6K)',                  desc:'Var −$6K, brand +0.03, morale +1.',                 varCost:6000,  brandDelta:+0.03, morale:+1 },
-        { id:'ply_micro_practice',   title:'Micro Mechanics Practice ($0)',         desc:'TSR +4, morale −1.',                                varCost:0,     tsr:+4,  morale:-1 },
-        { id:'ply_macro_review',     title:'Macro Game Review ($0)',                desc:'TSR +3, morale +0.',                                varCost:0,     tsr:+3 },
-        { id:'ply_scrim_block',      title:'Heavy Scrim Block ($0)',                desc:'TSR +6, morale −4; moderate injury risk.',          varCost:0,     tsr:+6,  morale:-4, bootcampRisk:true },
-        { id:'ply_flex_queue',       title:'Flex Queue Night ($2K)',                desc:'Var −$2K, morale +3, small TSR dip.',               varCost:2000,  morale:+3, tsr:-1 },
-        { id:'ply_aim_training',     title:'Aim Training Program ($5K)',            desc:'Var −$5K, TSR +4.',                                 varCost:5000,  tsr:+4 },
-        { id:'ply_community_games',  title:'Community Games with Fans ($3K)',       desc:'Var −$3K, fans +500, morale +2.',                   varCost:3000,  fans:+500, morale:+2 },
-        { id:'ply_off_role_day',     title:'Off-Role Fun Day ($2K)',                desc:'Var −$2K, morale +4, TSR −1.',                      varCost:2000,  morale:+4, tsr:-1 },
-        { id:'ply_review_coach',     title:'1:1 Coaching Reviews ($7K)',            desc:'Var −$7K, TSR +3, morale +2.',                      varCost:7000,  tsr:+3,  morale:+2 },
-        { id:'ply_language_training',title:'Comms Language Training ($4K)',         desc:'Var −$4K, TSR +2, brand +0.01.',                    varCost:4000,  tsr:+2,  brandDelta:+0.01 },
-        { id:'ply_sleep_research',   title:'Sleep Schedule Optimization ($5K)',     desc:'Var −$5K, morale +4, TSR +1.',                      varCost:5000,  morale:+4, tsr:+1 },
-        { id:'ply_nutrition_workshop',title:'Nutrition Workshop ($4K)',             desc:'Var −$4K, morale +3.',                              varCost:4000,  morale:+3 },
-        { id:'ply_chill_day',        title:'Full Chill Day ($0)',                   desc:'Morale +5, TSR −2.',                               varCost:0,     morale:+5, tsr:-2 },
-        { id:'ply_no_comms',         title:'No-Comms Challenge ($0)',               desc:'Morale +2 (fun), TSR −1.',                         varCost:0,     morale:+2, tsr:-1 },
-        { id:'ply_peer_feedback',    title:'Structured Peer Feedback ($1K)',        desc:'Var −$1K, morale +2, TSR +1.',                      varCost:1000,  morale:+2, tsr:+1 },
-        { id:'ply_captain_workshop', title:'Captain Leadership Workshop ($3K)',     desc:'Var −$3K, morale +3.',                              varCost:3000,  morale:+3 },
-        { id:'ply_clutch_drills',    title:'Clutch Situation Drills ($2K)',         desc:'Var −$2K, TSR +3.',                                 varCost:2000,  tsr:+3 },
-        { id:'ply_tilt_management',  title:'Tilt Management Session ($3K)',         desc:'Var −$3K, morale +3.',                              varCost:3000,  morale:+3 },
-        { id:'ply_sports_day',       title:'Real Sports Day ($5K)',                 desc:'Var −$5K, morale +5, small TSR buff.',             varCost:5000,  morale:+5, tsr:+1 }
-      ]
-    };
+    // ---------- SEASON DECKS ----------
+    const SEASON_DECKS = { /* unchanged deck data from your original code */ };
+
+    // (For brevity here, keep all your existing SEASON_DECKS.ops, mkt, ply objects exactly
+    // as in your original; I’m not altering game logic – just UI/animation.)
+
+    // ... PASTE YOUR FULL SEASON_DECKS OBJECT HERE ...
+
+    // (I’ll reinsert it fully, exactly as before)
+    SEASON_DECKS.ops = [
+      { id:'ops_analyst',          title:'Hire Analyst ($20K)',                    desc:'Var −$20K, fixed +$5K/turn, TSR +5.',              varCost:20000, fixedDelta:5000, tsr:+5 },
+      { id:'ops_assistant',        title:'Hire Team Manager ($15K)',              desc:'Var −$15K, fixed +$4K/turn, morale +4.',          varCost:15000, fixedDelta:4000, morale:+4 },
+      { id:'ops_data',             title:'Invest in Data Tools ($10K)',           desc:'Var −$10K, TSR +3, brand rep +0.03.',            varCost:10000, tsr:+3, brandDelta:+0.03 },
+      { id:'ops_gym',              title:'Add Gym Memberships ($8K)',             desc:'Var −$8K, morale +5.',                            varCost:8000,  morale:+5 },
+      { id:'ops_diet',             title:'Sports Nutrition Program ($12K)',       desc:'Var −$12K, TSR +2, morale +2.',                   varCost:12000, tsr:+2, morale:+2 },
+      { id:'ops_house_upgrade',    title:'Facility Deep Clean & Repair ($18K)',   desc:'Var −$18K, facility condition +10, morale +3.',  varCost:18000, facilityCond:+10, morale:+3 },
+      { id:'ops_travel_upgrade',   title:'Upgrade Travel Comfort ($10K)',         desc:'Var −$10K, morale +3, TSR +1.',                   varCost:10000, morale:+3, tsr:+1 },
+      { id:'ops_cut_staff',        title:'Cut Support Staff ($0)',                desc:'Fixed −$5K/turn, morale −5.',                     varCost:0,     fixedDelta:-5000, morale:-5 },
+      { id:'ops_stream_room',      title:'Build Stream Studio ($25K)',            desc:'Var −$25K, fans +800, brand +0.05.',             varCost:25000, fans:+800, brandDelta:+0.05 },
+      { id:'ops_sleep',            title:'Sleep & Wellness Program ($12K)',       desc:'Var −$12K, morale +6, TSR +1.',                  varCost:12000, morale:+6, tsr:+1 },
+      { id:'ops_interns',          title:'Bring in Interns ($5K)',                desc:'Var −$5K, fixed +$1K, morale +1, fans +100.',    varCost:5000,  fixedDelta:1000, morale:+1, fans:+100 },
+      { id:'ops_rent_negotiate',   title:'Negotiate Rent ($0)',                   desc:'Fixed −$3K/turn, brand rep −0.02.',              varCost:0,     fixedDelta:-3000, brandDelta:-0.02 },
+      { id:'ops_hr_policy',        title:'Formal HR Policies ($6K)',              desc:'Var −$6K, morale +3 over time.',                  varCost:6000,  morale:+3 },
+      { id:'ops_security',         title:'Upgrade Security ($9K)',                desc:'Var −$9K, protects equipment; small brand boost.',varCost:9000,  brandDelta:+0.02 },
+      { id:'ops_it_upgrade',       title:'IT Infrastructure Upgrade ($14K)',      desc:'Var −$14K, fewer tech issues, TSR +2.',          varCost:14000, tsr:+2 },
+      { id:'ops_backup_power',     title:'Backup Power System ($11K)',            desc:'Var −$11K, reduces chance of problem events.',    varCost:11000, facilityCond:+5 },
+      { id:'ops_head_coach',       title:'Hire Head Coach ($22K)',                desc:'Var −$22K, fixed +$8K/turn, TSR +6.',            varCost:22000, fixedDelta:8000, tsr:+6 },
+      { id:'ops_scrim_partner',    title:'Exclusive Scrim Partners ($13K)',       desc:'Var −$13K, TSR +4.',                             varCost:13000, tsr:+4 },
+      { id:'ops_transport_contract',title:'Travel Contract ($0)',                 desc:'Fixed +$2K/turn, reduces variable travel risk.',  varCost:0,     fixedDelta:2000 },
+      { id:'ops_cleaning_service', title:'Pro Cleaning Service ($7K)',            desc:'Var −$7K, facility condition +8, morale +2.',    varCost:7000,  facilityCond:+8, morale:+2 },
+      { id:'ops_healthcare',       title:'Player Healthcare Plan ($15K)',         desc:'Var −$15K, morale +5.',                           varCost:15000, morale:+5 },
+      { id:'ops_video_review_room',title:'Video Review Room ($16K)',              desc:'Var −$16K, TSR +4.',                             varCost:16000, tsr:+4 },
+      { id:'ops_qa_team',          title:'Quality Assurance Staff ($10K)',        desc:'Var −$10K, brand +0.03.',                        varCost:10000, brandDelta:+0.03 },
+      { id:'ops_insurance',        title:'Comprehensive Insurance ($9K)',         desc:'Var −$9K, protects vs big losses.',              varCost:9000 },
+      { id:'ops_benchmark_trip',   title:'Benchmark Visit to Pro Org ($18K)',     desc:'Var −$18K, TSR +3, brand +0.03.',                varCost:18000, tsr:+3, brandDelta:+0.03 },
+      { id:'ops_staff_retreat',    title:'Staff-Only Retreat ($12K)',             desc:'Var −$12K, morale +4.',                          varCost:12000, morale:+4 },
+      { id:'ops_automation',       title:'Workflow Automation Software ($15K)',   desc:'Var −$15K, fixed −$3K/turn, morale +1.',         varCost:15000, fixedDelta:-3000, morale:+1 },
+      { id:'ops_legal_consult',    title:'Legal Consultation ($8K)',              desc:'Var −$8K, protects brand in long run.',          varCost:8000 },
+      { id:'ops_accounting',       title:'Hire Accounting Firm ($10K)',           desc:'Var −$10K, better cost control; small fixed cut.',varCost:10000, fixedDelta:-2000 },
+      { id:'ops_green_initiative', title:'Green Facility Initiative ($9K)',       desc:'Var −$9K, brand +0.04, morale +1.',              varCost:9000,  brandDelta:+0.04, morale:+1 }
+    ];
+    SEASON_DECKS.mkt = [
+      { id:'mkt_merch',            title:'Launch Merch ($25K)',                   desc:'Var −$25K, +1K fans, +$10K merch next turn.',       varCost:25000, fans:+1000, merchNext:10000 },
+      { id:'mkt_local',            title:'Host Local Event ($30K)',               desc:'Var −$30K, +2K fans, morale +5.',                   varCost:30000, fans:+2000, morale:+5 },
+      { id:'mkt_minimal',          title:'Minimal Social ($0)',                   desc:'No spend, no immediate change.',                    varCost:0 },
+      { id:'mkt_stream',           title:'Weekly Stream Schedule ($8K)',          desc:'Var −$8K, fans +600, brand +0.04.',                 varCost:8000,  fans:+600, brandDelta:+0.04 },
+      { id:'mkt_college',          title:'Campus Activation ($15K)',              desc:'Var −$15K, fans +1200, brand +0.03.',               varCost:15000, fans:+1200, brandDelta:+0.03 },
+      { id:'mkt_collab',           title:'Collab with Influencer ($20K)',         desc:'Var −$20K, fans +1500, merch next +$5K.',           varCost:20000, fans:+1500, merchNext:5000 },
+      { id:'mkt_docu',             title:'Mini-Doc Series ($18K)',                desc:'Var −$18K, fans +900, morale +3.',                  varCost:18000, fans:+900, morale:+3 },
+      { id:'mkt_vip',              title:'VIP Fan Discord ($5K)',                 desc:'Var −$5K, fans +400, brand +0.02.',                 varCost:5000,  fans:+400, brandDelta:+0.02 },
+      { id:'mkt_cheap_ads',        title:'Cheap Online Ads ($6K)',                desc:'Var −$6K, fans +500.',                              varCost:6000,  fans:+500 },
+      { id:'mkt_charity',          title:'Charity Showmatch ($10K)',              desc:'Var −$10K, fans +800, brand +0.05.',                varCost:10000, fans:+800, brandDelta:+0.05 },
+      { id:'mkt_meet_greet',       title:'In-Person Meet & Greet ($12K)',         desc:'Var −$12K, fans +700, morale +2.',                  varCost:12000, fans:+700, morale:+2 },
+      { id:'mkt_premium_brand',    title:'Premium Brand Campaign ($25K)',         desc:'Var −$25K, brand +0.08, fans +900.',                varCost:25000, brandDelta:+0.08, fans:+900 },
+      { id:'mkt_tiktok_challenge', title:'TikTok Challenge ($7K)',                desc:'Var −$7K, fans +900, brand +0.03.',                 varCost:7000,  fans:+900, brandDelta:+0.03 },
+      { id:'mkt_club_partners',    title:'Partner with College Esports Clubs ($9K)',desc:'Var −$9K, fans +1000, brand +0.03.',             varCost:9000,  fans:+1000, brandDelta:+0.03 },
+      { id:'mkt_newsletter',       title:'Launch Email Newsletter ($4K)',         desc:'Var −$4K, fans +300, better retention.',            varCost:4000,  fans:+300 },
+      { id:'mkt_highlight_reel',   title:'Weekly Highlight Reels ($6K)',          desc:'Var −$6K, fans +600, brand +0.02.',                 varCost:6000,  fans:+600, brandDelta:+0.02 },
+      { id:'mkt_memes',            title:'Meme Marketing Push ($3K)',             desc:'Var −$3K, fans +400, low risk.',                    varCost:3000,  fans:+400 },
+      { id:'mkt_roadshow',         title:'Regional Roadshow ($20K)',              desc:'Var −$20K, fans +1600, brand +0.04.',               varCost:20000, fans:+1600, brandDelta:+0.04 },
+      { id:'mkt_sponsor_showcase', title:'Sponsor Showcase Stream ($5K)',         desc:'Var −$5K, brand +0.05, small fans boost.',          varCost:5000,  brandDelta:+0.05, fans:+300 },
+      { id:'mkt_viewing_party',    title:'Offline Viewing Party ($11K)',          desc:'Var −$11K, fans +900, morale +2.',                  varCost:11000, fans:+900, morale:+2 },
+      { id:'mkt_podcast',          title:'Team Podcast Launch ($9K)',             desc:'Var −$9K, fans +700, brand +0.03.',                 varCost:9000,  fans:+700, brandDelta:+0.03 },
+      { id:'mkt_cross_promo',      title:'Cross-Promote with Other Org ($10K)',   desc:'Var −$10K, fans +1000.',                            varCost:10000, fans:+1000 },
+      { id:'mkt_coach_clinic',     title:'Coach-Led Clinic ($8K)',                desc:'Var −$8K, fans +500, brand +0.02.',                 varCost:8000,  fans:+500, brandDelta:+0.02 },
+      { id:'mkt_student_discount', title:'Student Discount Program ($6K)',        desc:'Var −$6K, fans +600 (college age).',                varCost:6000,  fans:+600 },
+      { id:'mkt_loyalty_program',  title:'Fan Loyalty Program ($7K)',             desc:'Var −$7K, fans +500; retention boost.',             varCost:7000,  fans:+500 },
+      { id:'mkt_merch_collab',     title:'Merch Collab with Artist ($18K)',       desc:'Var −$18K, fans +1200, merch next +$8K.',           varCost:18000, fans:+1200, merchNext:8000 },
+      { id:'mkt_giveaway',         title:'Social Media Giveaway ($5K)',           desc:'Var −$5K, fans +700.',                              varCost:5000,  fans:+700 },
+      { id:'mkt_ingame_ads',       title:'In-Game Ad Partnership ($14K)',         desc:'Var −$14K, brand +0.06, fans +800.',                varCost:14000, brandDelta:+0.06, fans:+800 },
+      { id:'mkt_fan_survey',       title:'Fan Survey & Feedback ($4K)',           desc:'Var −$4K, morale +1, brand +0.02.',                 varCost:4000,  morale:+1, brandDelta:+0.02 },
+      { id:'mkt_ugc_campaign',     title:'User-Generated Content Campaign ($6K)', desc:'Var −$6K, fans +600.',                              varCost:6000,  fans:+600 }
+    ];
+    SEASON_DECKS.ply = [
+      { id:'ply_bootcamp',         title:'Intense Bootcamp ($0)',                 desc:'TSR +8; morale −10; higher injury risk.',            varCost:0,     tsr:+8,  morale:-10, bootcampRisk:true },
+      { id:'ply_retreat',          title:'Team Retreat ($10K)',                   desc:'Var −$10K, morale +10, TSR −3.',                    varCost:10000, morale:+10, tsr:-3 },
+      { id:'ply_balanced',         title:'Balanced Schedule ($0)',                desc:'TSR +2, morale +2.',                                varCost:0,     tsr:+2,  morale:+2 },
+      { id:'ply_vod',              title:'VOD Review Focus ($0)',                 desc:'TSR +4, morale −2.',                                varCost:0,     tsr:+4,  morale:-2 },
+      { id:'ply_content_day',      title:'Content Day ($3K)',                     desc:'Var −$3K, fans +600, morale +1, TSR −1.',          varCost:3000,  fans:+600, morale:+1, tsr:-1 },
+      { id:'ply_mental_coach',     title:'Mental Performance Coach ($12K)',       desc:'Var −$12K, morale +7.',                             varCost:12000, morale:+7 },
+      { id:'ply_substitute',       title:'Trial Substitute Player ($5K)',         desc:'Var −$5K, TSR +3 short term.',                      varCost:5000,  tsr:+3 },
+      { id:'ply_stream_focus',     title:'Stream-First Week ($0)',                desc:'Fans +700, TSR −2.',                                varCost:0,     fans:+700, tsr:-2 },
+      { id:'ply_role_swap',        title:'Experiment Role Swap ($0)',             desc:'TSR +5 if it lands; morale −3.',                    varCost:0,     tsr:+5,  morale:-3 },
+      { id:'ply_health_week',      title:'Health Reset Week ($4K)',               desc:'Var −$4K, morale +6.',                              varCost:4000,  morale:+6 },
+      { id:'ply_solo_queue',       title:'Solo Queue Grind ($0)',                 desc:'TSR +3, morale −1.',                                varCost:0,     tsr:+3,  morale:-1 },
+      { id:'ply_media_training',   title:'Media Training ($6K)',                  desc:'Var −$6K, brand +0.03, morale +1.',                 varCost:6000,  brandDelta:+0.03, morale:+1 },
+      { id:'ply_micro_practice',   title:'Micro Mechanics Practice ($0)',         desc:'TSR +4, morale −1.',                                varCost:0,     tsr:+4,  morale:-1 },
+      { id:'ply_macro_review',     title:'Macro Game Review ($0)',                desc:'TSR +3, morale +0.',                                varCost:0,     tsr:+3 },
+      { id:'ply_scrim_block',      title:'Heavy Scrim Block ($0)',                desc:'TSR +6, morale −4; moderate injury risk.',          varCost:0,     tsr:+6,  morale:-4, bootcampRisk:true },
+      { id:'ply_flex_queue',       title:'Flex Queue Night ($2K)',                desc:'Var −$2K, morale +3, small TSR dip.',               varCost:2000,  morale:+3, tsr:-1 },
+      { id:'ply_aim_training',     title:'Aim Training Program ($5K)',            desc:'Var −$5K, TSR +4.',                                 varCost:5000,  tsr:+4 },
+      { id:'ply_community_games',  title:'Community Games with Fans ($3K)',       desc:'Var −$3K, fans +500, morale +2.',                   varCost:3000,  fans:+500, morale:+2 },
+      { id:'ply_off_role_day',     title:'Off-Role Fun Day ($2K)',                desc:'Var −$2K, morale +4, TSR −1.',                      varCost:2000,  morale:+4, tsr:-1 },
+      { id:'ply_review_coach',     title:'1:1 Coaching Reviews ($7K)',            desc:'Var −$7K, TSR +3, morale +2.',                      varCost:7000,  tsr:+3,  morale:+2 },
+      { id:'ply_language_training',title:'Comms Language Training ($4K)',         desc:'Var −$4K, TSR +2, brand +0.01.',                    varCost:4000,  tsr:+2,  brandDelta:+0.01 },
+      { id:'ply_sleep_research',   title:'Sleep Schedule Optimization ($5K)',     desc:'Var −$5K, morale +4, TSR +1.',                      varCost:5000,  morale:+4, tsr:+1 },
+      { id:'ply_nutrition_workshop',title:'Nutrition Workshop ($4K)',             desc:'Var −$4K, morale +3.',                              varCost:4000,  morale:+3 },
+      { id:'ply_chill_day',        title:'Full Chill Day ($0)',                   desc:'Morale +5, TSR −2.',                               varCost:0,     morale:+5, tsr:-2 },
+      { id:'ply_no_comms',         title:'No-Comms Challenge ($0)',               desc:'Morale +2 (fun), TSR −1.',                         varCost:0,     morale:+2, tsr:-1 },
+      { id:'ply_peer_feedback',    title:'Structured Peer Feedback ($1K)',        desc:'Var −$1K, morale +2, TSR +1.',                      varCost:1000,  morale:+2, tsr:+1 },
+      { id:'ply_captain_workshop', title:'Captain Leadership Workshop ($3K)',     desc:'Var −$3K, morale +3.',                              varCost:3000,  morale:+3 },
+      { id:'ply_clutch_drills',    title:'Clutch Situation Drills ($2K)',         desc:'Var −$2K, TSR +3.',                                 varCost:2000,  tsr:+3 },
+      { id:'ply_tilt_management',  title:'Tilt Management Session ($3K)',         desc:'Var −$3K, morale +3.',                              varCost:3000,  morale:+3 },
+      { id:'ply_sports_day',       title:'Real Sports Day ($5K)',                 desc:'Var −$5K, morale +5, small TSR buff.',             varCost:5000,  morale:+5, tsr:+1 }
+    ];
 
     function findCard(category, id) {
       const deck = SEASON_DECKS[category] || [];
@@ -887,12 +964,20 @@
       winBar.style.width = `${(wp * 100).toFixed(0)}%`;
       winPct.textContent = `${(wp * 100).toFixed(0)}%`;
 
+      // trigger a glow pulse on win bar each update
+      if (winBar){
+        winBar.classList.remove('pulse');
+        void winBar.offsetWidth; // reflow to restart animation
+        winBar.classList.add('pulse');
+      }
+
       const pct = clamp(S.turn / S.maxStandardTurns, 0, 1);
       turnProgressPct.textContent = `${(pct * 100).toFixed(0)}%`;
 
       modeBadge.textContent = S.mode === 'standard' ? 'Standard Mode' : 'Extended Mode';
       modeBadge.className = `badge-mode ${S.mode}`;
       elScenario.textContent = scenarioText();
+      updateWelcomeTitle();
     }
 
     function appendLog(lines) {
@@ -927,6 +1012,7 @@
     function setNameFromInput() {
       S.name = (elName?.value || '').trim();
       save();
+      updateWelcomeTitle();
     }
 
     // ---- Decision selection and preview ----
@@ -1207,7 +1293,7 @@
         `Updated Cash Reserves: <b>${fmtMoney(S.cash)}</b> · Debt: <b>${fmtMoney(S.debt)}</b>`;
       elFeedback.textContent = 'Academic Feedback: ' + fb;
 
-            const decisions = {
+      const decisions = {
         ops: ops ? ops.title : null,
         mkt: mkt ? mkt.title : null,
         ply: ply ? ply.title : null
@@ -1270,6 +1356,7 @@
       if (mastery) S.mastered = true;
       return mastery;
     }
+
     function renderAnalytics() {
       if (!S.history || !S.history.length) return;
       if (typeof Chart === 'undefined') return;
@@ -1279,26 +1366,22 @@
       const actualCash = S.history.map(h => h.cash);
       const actualTSR = S.history.map(h => h.tsr);
 
-      // Simple “average player” baselines
       const avgCash = [];
       const avgTSR = [];
       let baselineCash = 250000;
       S.history.forEach((h, i) => {
-        baselineCash += 10000; // assume a modest +10K per turn “average”
+        baselineCash += 10000;
         avgCash.push(baselineCash);
-        avgTSR.push(60 + Math.min(i * 2, 25)); // TSR slowly trending upward
+        avgTSR.push(60 + Math.min(i * 2, 25));
       });
 
-      // Identify key moments (big decisions)
       const keyMoments = S.history
         .map((h, idx) => ({ h, idx }))
         .filter(({ h }) => h.bigFlags && (h.bigFlags.opsBig || h.bigFlags.mktBig || h.bigFlags.plyBig));
 
-      // Clear lists
       if (keyMomentsList) keyMomentsList.innerHTML = '';
       if (whatIfList) whatIfList.innerHTML = '';
 
-      // Populate key decision moments (up to last 6 interesting turns)
       keyMoments.slice(-6).forEach(({ h }) => {
         const li = document.createElement('li');
         const titles = [];
@@ -1313,7 +1396,6 @@
         keyMomentsList?.appendChild(li);
       });
 
-      // “What if?” scenarios – very rough, local comparisons
       function bestCheaperAlt(deck, actualTitle) {
         const actual = deck.find(c => c.title === actualTitle);
         if (!actual) return null;
@@ -1329,7 +1411,6 @@
         const li = document.createElement('li');
         let text = `Turn ${h.turn}: `;
 
-        // Try one category for each scenario, rotating
         if (h.bigFlags.opsBig && h.decisions.ops) {
           const alt = bestCheaperAlt(SEASON_DECKS.ops, h.decisions.ops);
           if (alt) {
@@ -1365,7 +1446,6 @@
         whatIfList?.appendChild(li);
       });
 
-      // Build charts
       if (cashChartInstance) cashChartInstance.destroy();
       if (tsrChartInstance) tsrChartInstance.destroy();
 
@@ -1445,7 +1525,6 @@
       });
     }
 
-    
     function finishSeason(reason) {
       S.phase = 'ended';
       S.endedReason = reason || 'standard';
@@ -1527,9 +1606,9 @@
         lines.push('You have mastered all core categories for this simulation. Further play is optional and purely exploratory.');
       }
 
-      elGame.style.display = 'none';
-      elIntro.style.display = 'none';
-      elFinal.style.display = 'block';
+      hideSection(elGame);
+      hideSection(elIntro);
+      showSection(elFinal);
       elFinalText.textContent = lines.join('\n');
 
       if (reason === 'standard') {
@@ -1551,9 +1630,9 @@
         `Fans: ${S.fans.toLocaleString()}\n` +
         `Rank: ${rankName(S.rank)}\n` +
         `Turns played: ${S.turn}`;
-      elGame.style.display = 'none';
-      elIntro.style.display = 'none';
-      elFinal.style.display = 'block';
+      hideSection(elGame);
+      hideSection(elIntro);
+      showSection(elFinal);
       elFinalText.textContent = text;
       elContinueExtended.style.display = 'none';
       renderAnalytics();
@@ -1567,11 +1646,12 @@
       localStorage.removeItem('mgrx_v2_autosave');
       S = { ...START };
       if (elName) elName.value = '';
-      elIntro.style.display = 'block';
-      elGame.style.display = 'none';
-      elFinal.style.display = 'none';
+      showSection(elIntro);
+      hideSection(elGame);
+      hideSection(elFinal);
       promptWrap.style.display = 'none';
       elLog.textContent = '';
+      updateWelcomeTitle();
     });
 
     elPrint?.addEventListener('click', () => window.print());
@@ -1580,9 +1660,9 @@
     elStart?.addEventListener('click', () => {
       setNameFromInput();
       S = { ...START, name: S.name };
-      elIntro.style.display = 'none';
-      elFinal.style.display = 'none';
-      elGame.style.display = 'block';
+      hideSection(elIntro);
+      hideSection(elFinal);
+      showSection(elGame);
       renderDecisionsForPhase();
       updateStatus();
       save();
@@ -1666,8 +1746,8 @@
     elContinueExtended?.addEventListener('click', () => {
       S.mode = 'extended';
       S.phase = 'season';
-      elFinal.style.display = 'none';
-      elGame.style.display = 'block';
+      hideSection(elFinal);
+      showSection(elGame);
       renderDecisionsForPhase();
       updateStatus();
       save();
@@ -1692,11 +1772,13 @@
     });
 
     if (S.phase !== 'ended' && (S.history && S.history.length > 0 || S.phase !== 'startup')) {
-      elIntro.style.display = 'none';
-      elFinal.style.display = 'none';
-      elGame.style.display = 'block';
+      hideSection(elIntro);
+      hideSection(elFinal);
+      showSection(elGame);
       renderDecisionsForPhase();
       updateStatus();
+    } else {
+      updateWelcomeTitle();
     }
 
     (function smokeTests() {
